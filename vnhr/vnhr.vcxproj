@@ -143,16 +143,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="hrcache.h" />
+    <ClInclude Include="hrmodel.h" />
+    <ClInclude Include="hrprocessor.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="vnhr.h" />
-    <ClInclude Include="VnhrDisplayWindow.h" />
-    <ClInclude Include="VnhrMainWindow.h" />
+    <ClInclude Include="vnhrdisplaywindow.h" />
+    <ClInclude Include="vnhrmainwindow.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="hrcache.cpp" />
+    <ClCompile Include="hrmodel.cpp" />
+    <ClCompile Include="hrprocessor.cpp" />
     <ClCompile Include="vnhr.cpp" />
-    <ClCompile Include="VnhrDisplayWindow.cpp" />
-    <ClCompile Include="VnhrMainWindow.cpp" />
+    <ClCompile Include="vnhrdisplaywindow.cpp" />
+    <ClCompile Include="vnhrmainwindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vnhr.rc" />
