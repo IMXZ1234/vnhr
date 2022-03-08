@@ -1,155 +1,11 @@
 #include "VnhrDisplayWindow.h"
 
 
-
-DWORD WINAPI VnhrDisplayWindow::RunHR(PVOID lParam)
-{
-    CAPSTRUCT stCap;
-    RECT stRect;
-    int x, y;
-    int i;
-    double _x, _y;
-    int w, h;
-    BITMAP stBitmap;
-    WCHAR szBuffer[128];
-    WCHAR szBitmapFilePath[128];
-    WCHAR szOutFilePath[128];
-    WCHAR szOutConvertedFilePath[128];
-    WCHAR szFileName[16];
-    WCHAR szTemp[16];
-    WCHAR szCmdLine[256];
-    WIN32_FIND_DATA stFindData;
-    HANDLE hFindFile;
-    STARTUPINFO stStartUp;
-    PROCESS_INFORMATION stProcInfo;
-    BITMAPFILEHEADER* pbmfh;
-    BITMAPINFO* pbmi;
-    BITMAPINFOHEADER* pbmih;
-    BITMAPCOREHEADER* pbmch;
-    BYTE* pBits;
-    while (true)
-    {
-        //MessageBox(NULL, L"RUN!", NULL, MB_OK);
-        WaitForSingleObject(hSemaphoreThread, INFINITE);
-        if (!AlterstCapList(&stCap, CAP_GET_FOR_PROCESS))
-            // on exiting thread
-            break;
-        //MessageBox(NULL, L"AFTER SEMOPHORE!", NULL, MB_OK);
-        if (!GetClientRect(hWndTarget, &stRect))
-            DestroyWindow(hWndDisplay);
-        //hDCDisplay = GetDC(hWndDisplay);
-        //GetClientRect(hWndDisplay, &stRect);
-        //BitBlt(hDCDisplay, 0, 0, stRect.right, stRect.bottom, stCap.hDC, 0, 0, SRCCOPY);
-        //ReleaseDC(hWndDisplay, hDCDisplay);
-
-        GetObject(stCap.hBitmap, sizeof(BITMAP), &stBitmap);
-        GetCurrentDirectory(128, szCurrentDir);
-        //MessageBox(NULL, szCurrentDir, L"szCurrentDir", MB_OK);
-        i = -1;
-        //find the first file name which is available to create .bmp(in other word, the path does not exist), 
-        //as there may be multiple working threads creating files
-        WaitForSingleObject(hMutexCreateFile, NULL);
-        do {
-            i++;
-            szBitmapFilePath[0] = L'\0';
-            wcscpy_s(szBitmapFilePath, szCurrentDir);
-            wcscat_s(szBitmapFilePath, L"\\");
-            wsprintf(szFileName, L"%d.bmp", i);
-            wcscat_s(szBitmapFilePath, szFileName);
-            hFindFile = FindFirstFile(szBitmapFilePath, &stFindData);
-        } while (hFindFile != INVALID_HANDLE_VALUE);
-        //MessageBox(NULL, szBitmapFilePath, L"szBitmapFilePath", MB_OK);
-        // TODO
-        SaveBitmapToFile(stCap.hDC, stCap.hBitmap, szBitmapFilePath);
-        ReleaseMutex(hMutexCreateFile);
-
-        DeleteDC(stCap.hDC);
-        DeleteObject(stCap.hBitmap);
-
-        //output file name
-        wcscpy_s(szOutFilePath, szCurrentDir);
-        wcscat_s(szOutFilePath, L"\\");
-        wsprintf(szFileName, L"%d.png", i);
-        wcscat_s(szOutFilePath, szFileName);
-        //MessageBox(NULL, szOutFilePath, L"szOutFilePath", MB_OK);
-
-        //output converted file name
-        wcscpy_s(szOutConvertedFilePath, szCurrentDir);
-        wcscat_s(szOutConvertedFilePath, L"\\");
-        wsprintf(szFileName, L"%d_.bmp", i);
-        wcscat_s(szOutConvertedFilePath, szFileName);
-        //MessageBox(NULL, szOutConvertedFilePath, L"szOutConvertedFilePath", MB_OK);
-
-        GetStartupInfo(&stStartUp);
-        stStartUp.wShowWindow = SW_HIDE;
-        stStartUp.dwFlags = stStartUp.dwFlags || STARTF_USESHOWWINDOW;
-
-        //construct cmdline for HR exe
-        wsprintf(szCmdLine, szCmdLineBase, szHRExePath, szBitmapFilePath, szOutFilePath, uHRScale, szModelrealesrgan_x4plus_anime);
-        //MessageBox(NULL, szCmdLine, L"HR", MB_OK);
-        ZeroMemory(&stProcInfo, sizeof(stProcInfo));
-        if (CreateProcess(szHRExePath, szCmdLine, NULL, NULL, NULL, NORMAL_PRIORITY_CLASS, NULL, szHRExeDir, &stStartUp, &stProcInfo))
-        {
-            WaitForSingleObject(stProcInfo.hProcess, INFINITE);
-            CloseHandle(stProcInfo.hProcess);
-            CloseHandle(stProcInfo.hThread);
-        }
-
-        //construct cmdline for ffmpeg to extract bmp from png
-        GetClientRect(hWndDisplay, &stRect);
-        //wsprintf(szCmdLine, szffmpegBase, szffmpegExePath, szOutFilePath, szOutConvertedFilePath);
-        wsprintf(szCmdLine, szffmpegResizeBase, szffmpegExePath, szOutFilePath, stRect.right - stRect.left, stRect.bottom - stRect.top, szOutConvertedFilePath);
-        //MessageBox(NULL, szCmdLine, L"ffmpeg", MB_OK);
-        ZeroMemory(&stProcInfo, sizeof(stProcInfo));
-        if (CreateProcess(szffmpegExePath, szCmdLine, NULL, NULL, NULL, NORMAL_PRIORITY_CLASS, NULL, szHRExeDir, &stStartUp, &stProcInfo))
-        {
-            WaitForSingleObject(stProcInfo.hProcess, INFINITE);
-            CloseHandle(stProcInfo.hProcess);
-            CloseHandle(stProcInfo.hThread);
-        }
-
-        pbmfh = LoadDIBfromFile(szOutConvertedFilePath);
-        if (!pbmfh)
-        {
-            MessageBox(NULL, L"Load Failed!", NULL, MB_OK);
-            goto ret;
-        }
-        pbmi = (BITMAPINFO*)(pbmfh + 1);
-        pbmih = (BITMAPINFOHEADER*)pbmi;
-        if (pbmih->biSize == sizeof(BITMAPINFOHEADER))
-        {
-            w = pbmih->biWidth;
-            h = abs(pbmih->biHeight);
-        }
-        else
-        {
-            pbmch = (BITMAPCOREHEADER*)pbmih;
-            w = pbmch->bcWidth;
-            h = abs(pbmch->bcHeight);
-        }
-        //wsprintf(szBuffer, L"%d %d", w, h);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
-        pBits = (BYTE*)pbmfh + pbmfh->bfOffBits;
-        hDCDisplay = GetDC(hWndDisplay);
-        //GetClientRect(hWndDisplay, &stRect);
-        //StretchDIBits(hDCDisplay, 0, 0, stRect.right - stRect.left, stRect.bottom - stRect.top, 0, 0, w, h, pBits, pbmi, DIB_RGB_COLORS, SRCCOPY);
-        SetDIBitsToDevice(hDCDisplay, 0, 0, w, h, 0, 0, 0, h, pBits, pbmi, DIB_RGB_COLORS);
-        ReleaseDC(hWndDisplay, hDCDisplay);
-    ret:
-        DeleteFile(szBitmapFilePath);
-        DeleteFile(szOutFilePath);
-        DeleteFile(szOutConvertedFilePath);
-        AlterstCapList(&stCap, CAP_PROCESS_OVER);
-    }
-    return NULL;
-}
-
 LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static WCHAR buffer[128];
     RECT stRect;
     HBITMAP hBMPCompat;
-    CAPSTRUCT* pstCap;
     int x, y, i;
     double _x, _y;
     VnhrDisplayWindow* pInstance = 
@@ -164,6 +20,8 @@ LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPAR
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
+        case VNHRM_FREE_BMP:
+            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -173,7 +31,9 @@ LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPAR
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        // TODO: 在此处添加使用 hdc 的任何绘图代码...
+        //GetClientRect(hWndDisplay, &stRect);
+        //StretchDIBits(hDCDisplay, 0, 0, stRect.right - stRect.left, stRect.bottom - stRect.top, 0, 0, w, h, pBits, pbmi, DIB_RGB_COLORS, SRCCOPY);
+        SetDIBitsToDevice(hdc, 0, 0, w, h, 0, 0, 0, h, pBits, pbmi, DIB_RGB_COLORS);
         EndPaint(hWnd, &ps);
     }
     break;
@@ -230,7 +90,7 @@ LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPAR
             DeleteObject(pstCap->hBitmap);
             DeleteDC(pstCap->hDC);
         }
-        AlterstCapList(NULL, CAP_CLEAR_ALL);
+        AlterstCapList(NULL, HRTASK_CLEAR_ALL);
         //// wait for running threads to finish
         //SwitchToThread();
         CloseHandle(hThread);

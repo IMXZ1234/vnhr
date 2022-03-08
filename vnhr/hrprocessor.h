@@ -6,10 +6,15 @@
 #include "hrmodel.h"
 #include "util.h"
 
-#define CAP_PROCESS_OVER	1
-#define CAP_APPEND			2
-#define CAP_GET_FOR_PROCESS 3
-#define CAP_CLEAR_ALL		4
+#define HRTASK_PROCESS_OVER		1
+#define HRTASK_APPEND			2
+#define HRTASK_GET_FOR_PROCESS	3
+#define HRTASK_CLEAR_ALL		4
+
+#define VNHRM_FREE_BMP			0x501
+
+#define HRPROCESS_DISCARDED		1
+#define HRPROCESS_PROCESSED		2
 
 struct HRPROCESSCONFIG
 {
@@ -31,9 +36,9 @@ public:
 	static inline HRProcessor GetInstance();
 	// Schedules the tasks and calls RunHR() at suitable time.
 	// Will send notify message to hWndOwner when processing is complete.
-	bool ProcessHR(HWND hWnd, HRPROCESSTASK* pstTask);
+	bool ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask);
 	// Store the model and cache used by hWnd in internal map.
-	bool Register(HWND hWnd, HRPROCESSCONFIG* pstConfig);
+	bool Register(HWND hWnd, const HRPROCESSCONFIG* pstConfig);
 	bool Unregister(HWND hWnd);
 	bool SetMaxThreadNum(int max_thread_num);
 private:
@@ -45,11 +50,8 @@ private:
 	std::list<HRPROCESSTASK*> task_waiting_list_;
 	std::list<HRPROCESSTASK*> task_processing_list_;
 
-	HANDLE hSemaphoreThread_;
 	BOOL bThreadExit_;
 	CRITICAL_SECTION stCS_;
-	HANDLE hMutexAlter_;
-	HANDLE hMutexCreateFile_;
 	HRProcessor();
 	~HRProcessor();
 

@@ -193,7 +193,7 @@ void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DW
     ReleaseDC(hWndTarget, hDCTarget);
     stCap.hBitmap = hBitmapCompat;
     stCap.hDC = hDCCompat;
-    AlterstCapList(&stCap, CAP_APPEND);
+    AlterstCapList(&stCap, HRTASK_APPEND);
     //ViewhDCListLen();
     ReleaseSemaphore(hSemaphoreThread, 1, NULL);
     //ViewhDCListLen();
@@ -285,7 +285,7 @@ LRESULT CALLBACK DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             DeleteObject(pstCap->hBitmap);
             DeleteDC(pstCap->hDC);
         }
-        AlterstCapList(NULL, CAP_CLEAR_ALL);
+        AlterstCapList(NULL, HRTASK_CLEAR_ALL);
         //// wait for running threads to finish
         //SwitchToThread();
         CloseHandle(hThread);

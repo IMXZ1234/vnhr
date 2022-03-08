@@ -149,6 +149,7 @@
     <ClInclude Include="hrprocessor.h" />
     <ClInclude Include="idallocator.h" />
     <ClInclude Include="imgcapture.h" />
+    <ClInclude Include="realesrganhrmodel.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="vnhr.h" />
@@ -163,6 +164,7 @@
     <ClCompile Include="hrprocessor.cpp" />
     <ClCompile Include="idallocator.cpp" />
     <ClCompile Include="imgcapture.cpp" />
+    <ClCompile Include="realesrganhrmodel.cpp" />
     <ClCompile Include="vnhr.cpp" />
     <ClCompile Include="vnhrdisplaywindow.cpp" />
     <ClCompile Include="vnhrmainwindow.cpp" />
