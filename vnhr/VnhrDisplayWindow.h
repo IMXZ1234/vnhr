@@ -2,10 +2,6 @@
 #include "vnhr.h"
 #include <list>
 
-#define ID_EDITWNDTARTGET	1
-#define ID_BUTTONSTART		2
-#define ID_LABELTEST		3
-
 #define ID_TIMERDISPLAYDELAY 1
 
 
@@ -19,6 +15,11 @@ WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
 
 class VnhrDisplayWindow
 {
+public:
+	VnhrDisplayWindow();
+	~VnhrDisplayWindow();
+
+private:
 	HWND hWndTarget;
 	HWND hWndDisplay;
 	HWND hEditWndTarget;
@@ -30,10 +31,6 @@ class VnhrDisplayWindow
 	HDC hDCTarget;
 	HANDLE hThread;
 	DWORD dwThreadId;
-	BOOL bThreadExit;
-	CRITICAL_SECTION stCS;
-	HANDLE hMutexAlter;
-	HANDLE hMutexCreateFile;
 	HANDLE hSemaphoreThread;
 	DWORD error;
 	WCHAR buffer[128];
@@ -43,17 +40,11 @@ class VnhrDisplayWindow
 	UINT uHRScale = 4;
 	UINT uScreenX, uScreenY;
 
-	WCHAR szCurrentDir[128];
-
-	std::list<CAPSTRUCT*> pstCapList;
-	std::list<CAPSTRUCT*> pstCapProcessList;
-
 
 	DWORD baseUnit = GetDialogBaseUnits();
 	int cxChar = LOWORD(baseUnit);
 	int cyChar = HIWORD(baseUnit);
 
-	VnhrDisplayWindow();
-	DWORD WINAPI RunHR(PVOID lParam);
+	static LRESULT DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 };
 

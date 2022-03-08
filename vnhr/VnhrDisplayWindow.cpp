@@ -144,7 +144,7 @@ DWORD WINAPI VnhrDisplayWindow::RunHR(PVOID lParam)
     return NULL;
 }
 
-LRESULT CALLBACK DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static WCHAR buffer[128];
     RECT stRect;
@@ -152,6 +152,7 @@ LRESULT CALLBACK DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     CAPSTRUCT* pstCap;
     int x, y, i;
     double _x, _y;
+    VnhrDisplayWindow* pInstance = 
     switch (message)
     {
     case WM_COMMAND:

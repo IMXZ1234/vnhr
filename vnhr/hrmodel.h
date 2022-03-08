@@ -1,9 +1,10 @@
 #pragma once
-#include "hrprocessor.h"
 
 class HRModel
 {
 public:
-	virtual bool RunHR();
+	// Run Hyper Resolution.
+	// 
+	virtual bool RunHRAsBitmap(BITMAPFILEHEADER* pbmihFrom, BITMAPFILEHEADER* pbmihTo);
 };
 
