@@ -156,6 +156,7 @@
     <ClInclude Include="vnhrdisplaywindow.h" />
     <ClInclude Include="vnhrmainwindow.h" />
     <ClInclude Include="util.h" />
+    <ClInclude Include="vnhrwindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gdiimgcapture.cpp" />
@@ -169,6 +170,7 @@
     <ClCompile Include="vnhrdisplaywindow.cpp" />
     <ClCompile Include="vnhrmainwindow.cpp" />
     <ClCompile Include="util.cpp" />
+    <ClCompile Include="vnhrwindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vnhr.rc" />

@@ -33,7 +33,7 @@ struct HRPROCESSTASK
 class HRProcessor
 {
 public:
-	static inline HRProcessor GetInstance();
+	static inline HRProcessor* GetInstance();
 	// Schedules the tasks and calls RunHR() at suitable time.
 	// Will send notify message to hWndOwner when processing is complete.
 	bool ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask);
@@ -50,8 +50,11 @@ private:
 	std::list<HRPROCESSTASK*> task_waiting_list_;
 	std::list<HRPROCESSTASK*> task_processing_list_;
 
-	BOOL bThreadExit_;
+	bool bThreadExit_;
 	CRITICAL_SECTION stCS_;
+	HANDLE hSemaphoreThread_;
+	HANDLE hMutexAlter_;
+
 	HRProcessor();
 	~HRProcessor();
 

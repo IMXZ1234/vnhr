@@ -2,14 +2,12 @@
 
 RealesrganHRModel::RealesrganHRModel()
 {
-    hMutexAlter_ = CreateMutex(NULL, FALSE, NULL);
     hMutexCreateFile_ = CreateMutex(NULL, FALSE, NULL);
     hr_scale = 4;
 }
 
 RealesrganHRModel::~RealesrganHRModel()
 {
-    CloseHandle(hMutexAlter_);
     CloseHandle(hMutexCreateFile_);
 }
 

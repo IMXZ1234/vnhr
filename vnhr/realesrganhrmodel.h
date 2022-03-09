@@ -10,8 +10,6 @@ public:
 	~RealesrganHRModel();
 	virtual bool RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const RECT* stRectFrom, BITMAPINFOHEADER* pbmihTo, const RECT* stRectTo);
 private:
-	HANDLE hSemaphoreThread_;
-	HANDLE hMutexAlter_;
 	HANDLE hMutexCreateFile_;
 	int hr_scale;
 };

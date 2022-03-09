@@ -1,8 +1,25 @@
 #include "hrprocessor.h"
 
-inline HRProcessor HRProcessor::GetInstance()
+HRProcessor::HRProcessor()
 {
-    return instance_;
+    max_thread_num_ = 3;
+    max_task_list_len_ = 1;
+    bThreadExit_ = false;
+    InitializeCriticalSection(&stCS_);
+    hMutexAlter_ = CreateMutex(NULL, FALSE, NULL);
+    hSemaphoreThread_ = CreateSemaphore(NULL, 0, max_thread_num_, NULL);
+}
+
+HRProcessor::~HRProcessor()
+{
+    DeleteCriticalSection(&stCS_);
+    CloseHandle(hMutexAlter_);
+    CloseHandle(hSemaphoreThread_);
+}
+
+inline HRProcessor* HRProcessor::GetInstance()
+{
+    return &instance_;
 }
 
 bool HRProcessor::ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask)
@@ -55,6 +72,8 @@ bool HRProcessor::Unregister(HWND hWnd)
 bool HRProcessor::SetMaxThreadNum(int max_thread_num)
 {
     max_thread_num_ = max_thread_num;
+    CloseHandle(hSemaphoreThread_);
+    hSemaphoreThread_ = CreateSemaphore(NULL, 0, max_thread_num_, NULL);
     return true;
 }
 
@@ -62,7 +81,7 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
 {
     std::list<HRPROCESSTASK*>::const_iterator it;
     HRPROCESSTASK* target = nullptr;
-    WaitForSingleObject(hMutexAlter_, NULL);
+    EnterCriticalSection(&stCS_);
     switch (op)
     {
     case HRTASK_APPEND:
@@ -106,7 +125,7 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
     default:
         break;
     }
-    ReleaseMutex(hMutexAlter_);
+    LeaveCriticalSection(&stCS_);
     return target;
 }
 
