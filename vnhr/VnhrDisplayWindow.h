@@ -1,16 +1,16 @@
 #pragma once
 #include "vnhr.h"
 #include "hrprocessor.h"
+#include "vnhrwindow.h"
 #include <list>
 #include <map>
 
 #define ID_TIMERDISPLAYDELAY 1
 
-class VnhrDisplayWindow
+class VnhrDisplayWindow :
+	public VnhrWindow
 {
 public:
-	VnhrDisplayWindow();
-	~VnhrDisplayWindow();
 
 private:
 	HWND hWndTarget;
@@ -38,6 +38,6 @@ private:
 	int cxChar = LOWORD(baseUnit);
 	int cyChar = HIWORD(baseUnit);
 
-	static LRESULT DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 };
 

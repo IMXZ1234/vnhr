@@ -1,14 +1,14 @@
 #include "VnhrDisplayWindow.h"
 
 
-LRESULT CALLBACK VnhrDisplayWindow::DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static WCHAR buffer[128];
     RECT stRect;
     HBITMAP hBMPCompat;
     int x, y, i;
     double _x, _y;
-    VnhrDisplayWindow* pInstance = 
+    VnhrDisplayWindow* pInstance = (VnhrDisplayWindow*)GetObjectforWnd(hWnd);
     switch (message)
     {
     case WM_COMMAND:

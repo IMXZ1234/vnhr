@@ -10,10 +10,9 @@
 #define MAX_LOADSTRING 100
 using namespace std;
 
-// 全局变量:
-HINSTANCE hInst;                                // 当前实例
-WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
-WCHAR szWndClassMain[MAX_LOADSTRING];            // 主窗口类名
+HINSTANCE hInst;
+WCHAR szTitle[MAX_LOADSTRING];
+WCHAR szWndClassMain[MAX_LOADSTRING];
 WCHAR szWndClassDisplay[MAX_LOADSTRING];
 HWND hWndTarget;
 HWND hWndDisplay;

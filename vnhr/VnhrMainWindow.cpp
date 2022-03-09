@@ -49,6 +49,10 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
     HWND hWndUnderMouse = NULL;
     WCHAR szBuffer[128];
     int available_timerid;
+    //std::map<HWND, VnhrWindow*>::iterator it = window_object_map_.find(hWnd);
+    //VnhrMainWindow* obj = (VnhrMainWindow*)(*it).second;
+    VnhrMainWindow* obj = (VnhrMainWindow*)GetObjectforWnd(hWnd);
+    VnhrDisplayWindow display_window;
     switch (message)
     {
     case WM_COMMAND:
@@ -58,7 +62,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         switch (wmId)
         {
         case ID_BUTTONSTART:
-            GetWindowText(instance_.hEditWndTarget, buffer, 128);
+            GetWindowText(obj->hEditWndTarget, buffer, 128);
             hWndTarget = (HWND)wstrhex2int(buffer);
             if (!IsWindow(hWndTarget))
             {
@@ -73,7 +77,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             uScreenX = GetDeviceCaps(hDCScreen, HORZRES);
             uScreenY = GetDeviceCaps(hDCScreen, VERTRES);
             ReleaseDC(NULL, hDCScreen);
-            hWndDisplay = CreateWindow(szWndClassDisplay, buffer, WS_VISIBLE | WS_POPUP, 0, 0,
+            display_window.Init(szWndClassDisplay, buffer, WS_VISIBLE | WS_POPUP, 0, 0,
                 uScreenX, uScreenY, hWnd, NULL, hInst, NULL);
 
             break;
