@@ -3,6 +3,8 @@
 
 #include "framework.h"
 #include "vnhr.h"
+#include "vnhrdisplaywindow.h"
+#include "vnhrmainwindow.h"
 #include <list>
 #include <vector>
 //#include "opencv2/opencv.hpp"
@@ -48,12 +50,6 @@ WCHAR szffmpegBase[] = L"%s -i %s %s";
 WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
 //WCHAR szffmpegBase[] = L"C:\Users\asus\coding\vsc++\ffmpeg-4.4.1-full_build-shared\bin\ffmpeg -i %s %s";
 
-list<CAPSTRUCT*> pstCapList;
-//capstruct under process
-list<CAPSTRUCT*> pstCapProcessList;
-//list<HBITMAP> hBMPList;
-//list<HDC> hDCList;
-//list<UINT_PTR> hIDTimerList;
 
 
 DWORD baseUnit = GetDialogBaseUnits();
@@ -299,21 +295,3 @@ LRESULT CALLBACK DisplayWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 }
 
 // “关于”框的消息处理程序。
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}

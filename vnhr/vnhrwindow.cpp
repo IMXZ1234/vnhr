@@ -1,7 +1,5 @@
 #include "vnhrwindow.h"
 
-bool VnhrWindow::window_class_registered = false;
-
 bool VnhrWindow::Init(
     DWORD dwExStyle,
     LPCWSTR lpClassName,
@@ -16,11 +14,6 @@ bool VnhrWindow::Init(
     HINSTANCE hInstance,
     LPVOID lpParam)
 {
-    if (!window_class_registered)
-    {
-        RegisterWndClass();
-        window_class_registered = true;
-    }
     hWnd_ = CreateWindowEx(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 	hInstance_ = hInstance;
 	hWndParent_ = hWndParent;

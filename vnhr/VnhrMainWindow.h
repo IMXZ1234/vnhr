@@ -2,6 +2,7 @@
 #include "vnhr.h"
 #include "vnhrwindow.h"
 #include "vnhrdisplaywindow.h"
+#include "idallocator.h"
 #include "util.h"
 
 #define ID_EDITWNDTARTGET	1
@@ -12,11 +13,15 @@ class VnhrMainWindow :
 	public VnhrWindow
 {
 public:
-
+	static ATOM RegisterWndClass();
 private:
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+	static IDAllocator idallocator;
+
 	HWND hEditWndTarget;
 	HWND hButtonStart;
+	bool bSearchingTarget;
 
 };
 

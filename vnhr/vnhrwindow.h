@@ -9,7 +9,8 @@ public:
     ~VnhrWindow() = default;
 	// creates the window and insert a pair of hWnd and this VnhrWindow instance's pointer into window_object_map
 	// has the same param as CreateWindowEx()
-	virtual bool Init(
+	static ATOM RegisterWndClass();
+    virtual bool Init(
          DWORD dwExStyle,
          LPCWSTR lpClassName,
          LPCWSTR lpWindowName,
@@ -26,9 +27,6 @@ public:
 	
 	inline static VnhrWindow* GetObjectforWnd(HWND hWnd);
 protected:
-    virtual ATOM RegisterWndClass();
-    static bool window_class_registered;
-
 	static std::map<HWND, VnhrWindow*> window_object_map_;
 	HINSTANCE hInstance_;
 	HWND hWndParent_;
