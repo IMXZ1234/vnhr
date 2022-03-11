@@ -2,17 +2,6 @@
 
 const WCHAR VnhrMainWindow::szWndClassName_[32] = TEXT("VnhrMainWindow");
 
-HWND hButtonFindApp;
-HWND hButtonInstallHook;
-HWND hStaticInstallHook;
-HWND hEdithWndTarget;
-BOOL bHookInstalled = FALSE;
-BOOL bSearchingTarget = FALSE;
-HMODULE hDllhk;
-HANDLE hTimer;
-UINT idTimer = NULL;
-std::map<int, UINT> idTimerMap;
-
 ATOM VnhrMainWindow::RegisterWndClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -20,7 +9,7 @@ ATOM VnhrMainWindow::RegisterWndClass(HINSTANCE hInstance)
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
+    wcex.lpfnWndProc = VnhrMainWindow::WndProc;
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
@@ -36,25 +25,23 @@ ATOM VnhrMainWindow::RegisterWndClass(HINSTANCE hInstance)
 
 bool VnhrMainWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-    VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
-    return true;
+    bSearchingTarget = false;
+    hEdithWndTarget = NULL;
+    hButtonStart = NULL;
+    hStaticSearchTarget = NULL;
+    return VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
 
 LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static WCHAR buffer[128];
-    RECT stRect;
+    WCHAR szBuffer[128];
     HDC hDCScreen;
     HWND hWndTarget;
     int uScreenX, uScreenY;
     int cxChar, cyChar;
     POINT point;
-    HWND hLastWndUnderMouse = NULL;
-    HWND hWndUnderMouse = NULL;
-    WCHAR szBuffer[128];
-    int available_timerid;
-    //std::map<HWND, VnhrWindow*>::iterator it = window_object_map_.find(hWnd);
-    //VnhrMainWindow* obj = (VnhrMainWindow*)(*it).second;
+    static HWND hLastWndUnderMouse = NULL;
+    static HWND hWndUnderMouse = NULL;
     VnhrMainWindow* obj = (VnhrMainWindow*)GetObjectforWnd(hWnd);
     VnhrDisplayWindow* display_window;
     switch (message)
@@ -66,25 +53,21 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         switch (wmId)
         {
         case ID_BUTTONSTART:
-            GetWindowText(obj->hEdithWndTarget, buffer, 128);
-            hWndTarget = (HWND)wstrhex2int(buffer);
+            GetWindowText(obj->hEdithWndTarget, szBuffer, 128);
+            hWndTarget = (HWND)wstrhex2int(szBuffer);
             if (!IsWindow(hWndTarget))
             {
-                wsprintf(buffer, L"Invalid Window Handle %X !", hWndTarget);
-                MessageBox(hWnd, buffer, L"hWndTarget", MB_OK);
+                wsprintf(szBuffer, L"Invalid Window Handle %X !", hWndTarget);
+                MessageBox(hWnd, szBuffer, L"hWndTarget", MB_OK);
                 break;
             }
-            //GetClientRect(hWndTarget, &stRect);
-            //hWndDisplay = CreateWindow(szWndClassDisplay, buffer, WS_VISIBLE | WS_OVERLAPPEDWINDOW, 0, 0, 
-            //    stRect.right - stRect.left, stRect.bottom - stRect.top, hWnd, NULL, hInst, NULL);
             hDCScreen = GetDC(NULL);
             uScreenX = GetDeviceCaps(hDCScreen, HORZRES);
             uScreenY = GetDeviceCaps(hDCScreen, VERTRES);
             ReleaseDC(NULL, hDCScreen);
             display_window = new VnhrDisplayWindow();
-            display_window->Init(NULL, szWndClassName_, buffer, WS_VISIBLE | WS_POPUP, 0, 0,
+            display_window->Init(NULL, szWndClassName_, szBuffer, WS_VISIBLE | WS_POPUP, 0, 0,
                 uScreenX, uScreenY, hWnd, NULL, obj->hInstance_, NULL);
-
             break;
         case ID_STATICSEARCHTARGET:
             //MessageBox(hWnd, L"Static clicked", NULL, MB_OK);
@@ -143,6 +126,8 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         obj->hButtonStart = CreateWindow(TEXT("BUTTON"), NULL, WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, cxChar, cyChar * 16, cxChar * 20, cyChar * 2, hWnd, (HMENU)ID_BUTTONSTART, obj->hInstance_, NULL);
         break;
     case WM_DESTROY:
+        obj->Destruction();
+        delete obj;
         PostQuitMessage(0);
         break;
     default:

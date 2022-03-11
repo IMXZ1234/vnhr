@@ -1,7 +1,7 @@
 #include "VnhrDisplayWindow.h"
 
 const WCHAR VnhrDisplayWindow::szWndClassName_[32] = TEXT("VnhrDisplayWindow");
-IDAllocator VnhrDisplayWindow::idallocator_(0, -1);
+IDAllocator VnhrDisplayWindow::timer_idallocator(0, -1);
 
 void CALLBACK Timerproc(
     HWND hWnd,
@@ -24,7 +24,7 @@ void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DW
     CAPSTRUCT stCap;
     WCHAR buffer[128];
     KillTimer(NULL, iTimerID);
-    hDCTarget = GetDC(hWndTarget);
+    hDCTarget = GetDC(hWndTarget_);
     hDCCompat = CreateCompatibleDC(hDCTarget);
     GetClientRect(hWndTarget, &stRect);
     hBitmapCompat = CreateCompatibleBitmap(hDCTarget, stRect.right - stRect.left, stRect.bottom - stRect.top);
@@ -48,7 +48,7 @@ ATOM VnhrDisplayWindow::RegisterWndClass(HINSTANCE hInstance)
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
+    wcex.lpfnWndProc = VnhrDisplayWindow::WndProc;
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
@@ -64,22 +64,52 @@ ATOM VnhrDisplayWindow::RegisterWndClass(HINSTANCE hInstance)
 
 bool VnhrDisplayWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-    VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
-    cache_ = new HRCache();
-    img_capture_ = new ImgCapture();
+    HRPROCESSCONFIG process_config;
+    hr_cache_ = new HRCache();
+    hr_model_ = new RealesrganHRModel();
+    img_capture_ = new GDIImgCapture();
+    processor_ = HRProcessor::GetInstance();
     auto_mode_ = false;
+    uDisplayDelay = 400;
+    hWndTarget_ = NULL;
+    if (VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam))
+        return false;
+    process_config.cache = hr_cache_;
+    process_config.model = hr_model_;
+    processor_->Register(hWnd_, &process_config);
     return true;
+}
+
+bool VnhrDisplayWindow::Destruction()
+{
+    processor_->Unregister(hWnd_);
+    delete hr_cache_;
+    delete hr_model_;
+    delete img_capture_;
+    return VnhrWindow::Destruction();
+}
+
+inline bool VnhrDisplayWindow::SetTargetWindow(HWND hWndTarget)
+{
+    hWndTarget_ = hWndTarget;
+    return true;
+}
+
+inline HWND VnhrDisplayWindow::GetTargetWindow()
+{
+    return hWndTarget_;
 }
 
 LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static WCHAR buffer[128];
+    static WCHAR szBuffer[128];
     RECT stRect;
     HBITMAP hBMPCompat;
     int x, y, i;
     double _x, _y;
     VnhrDisplayWindow* obj = (VnhrDisplayWindow*)GetObjectforWnd(hWnd);
     int available_timerid;
+    UINT idTimer;
     switch (message)
     {
     case WM_TIMER:
@@ -99,7 +129,7 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
             return DefWindowProc(hWnd, message, wParam, lParam);
         case IDC_AUTO:
             MessageBox(hWnd, L"Install", NULL, MB_OK);
-            available_timerid = idallocator_.AllocateID();
+            available_timerid = timer_idallocator.AllocateID();
             if (available_timerid == -1)
                 break;
             idTimer = SetTimer(hWnd, available_timerid, 1000, Timerproc);
@@ -144,17 +174,16 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         GetClientRect(hWnd, &stRect);
         x = (WORD)(_x / (double)(stRect.right - stRect.left));
         y = (WORD)(_y / (double)(stRect.bottom - stRect.top));
-        error = PostMessage(hWndTarget, message, wParam, MAKELPARAM(x, y));
+        PostMessage(hWndTarget, message, wParam, MAKELPARAM(x, y));
         //error = GetLastError();
         //wsprintf(buffer, L"%d", error);
         //SetWindowText(hLabelTest3, buffer);
         break;
     case WM_CREATE:
-
-        processor_->Register(hWnd, )
         break;
     case WM_DESTROY:
-        processor_->Unregister(hWnd);
+        obj->Destruction();
+        delete obj;
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

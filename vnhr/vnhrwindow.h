@@ -30,7 +30,7 @@ public:
 
     static const WCHAR szWndClassName_[32];
 protected:
-	static std::map<HWND, VnhrWindow*> window_object_map_;
+	static std::map<HWND, VnhrWindow*> window_object_map;
 
 	HINSTANCE hInstance_;
 	HWND hWndParent_;

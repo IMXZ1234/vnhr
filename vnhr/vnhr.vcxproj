@@ -161,10 +161,8 @@
   <ItemGroup>
     <ClCompile Include="gdiimgcapture.cpp" />
     <ClCompile Include="hrcache.cpp" />
-    <ClCompile Include="hrmodel.cpp" />
     <ClCompile Include="hrprocessor.cpp" />
     <ClCompile Include="idallocator.cpp" />
-    <ClCompile Include="imgcapture.cpp" />
     <ClCompile Include="realesrganhrmodel.cpp" />
     <ClCompile Include="vnhr.cpp" />
     <ClCompile Include="vnhrdisplaywindow.cpp" />

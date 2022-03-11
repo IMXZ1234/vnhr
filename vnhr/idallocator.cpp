@@ -1,5 +1,23 @@
 #include "idallocator.h"
 
+std::map<int, IDAllocator*> IDAllocator::allocator_pool_;
+
+IDAllocator* IDAllocator::GetIDAllocatorFor(int id_type)
+{
+	std::map<int, IDAllocator*>::iterator it = allocator_pool_.find(id_type);
+	IDAllocator* obj;
+	// if already exists, provide the IDAllocator object in the pool
+	if (it != allocator_pool_.end())
+		return (*it).second;
+	else
+	{
+		// create a new IDAllocator object for this specific type
+		obj = new IDAllocator(0, -1);
+		allocator_pool_.insert(std::pair<int, IDAllocator*>(id_type, obj));
+		return obj;
+	}
+}
+
 IDAllocator::IDAllocator(int min_id, int max_id)
 {
 	if (min_id < 0)

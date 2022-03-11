@@ -16,46 +16,7 @@ HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWndClassMain[MAX_LOADSTRING];
 WCHAR szWndClassDisplay[MAX_LOADSTRING];
-HWND hWndTarget;
-HWND hWndDisplay;
-HWND hEditWndTarget;
-HWND hButtonStart;
-HWND hLabelTest;
-HWND hLabelTest2;
-HWND hLabelTest3;
-HDC hDCDisplay;
-HDC hDCTarget;
-HANDLE hThread;
-DWORD dwThreadId;
-BOOL bThreadExit;
-CRITICAL_SECTION stCS;
-HANDLE hMutexAlter;
-HANDLE hMutexCreateFile;
-HANDLE hSemaphoreThread;
-DWORD error;
-WCHAR buffer[128];
-UINT uDisplayDelay = 400;
-UINT ustCapCapacity = 1;
-HDC hDCMem;
-UINT uHRScale = 4;
-UINT uScreenX, uScreenY;
-
-WCHAR szCurrentDir[128];
-WCHAR szHRExePath[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows\\realesrgan-ncnn-vulkan.exe";
-WCHAR szffmpegExePath[] = L"C:\\Users\\asus\\coding\\vsc++\\ffmpeg-4.4.1-full_build-shared\\bin\\ffmpeg.exe";
-WCHAR szHRExeDir[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows";
-WCHAR szModelrealesrgan_x4plus_anime[] = L"realesrgan-x4plus-anime";
-WCHAR szCmdLineBase[] = L"%s -i %s -o %s -s %d -n %s";
-WCHAR szffmpegBase[] = L"%s -i %s %s";
-WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
-//WCHAR szffmpegBase[] = L"C:\Users\asus\coding\vsc++\ffmpeg-4.4.1-full_build-shared\bin\ffmpeg -i %s %s";
-
-
-
-DWORD baseUnit = GetDialogBaseUnits();
-int cxChar = LOWORD(baseUnit);
-int cyChar = HIWORD(baseUnit);
-
+VnhrMainWindow* main_window;
 
 
 // 此代码模块中包含的函数的前向声明:
@@ -151,16 +112,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance;
 
-   HWND hWnd = CreateWindowW(szWndClassMain, szTitle, WS_OVERLAPPEDWINDOW,
+   main_window = new VnhrMainWindow();
+
+   bool success = main_window->Init(NULL, VnhrMainWindow::szWndClassName_, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
+   if (!success)
    {
       return FALSE;
    }
-
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
 
    return TRUE;
 }

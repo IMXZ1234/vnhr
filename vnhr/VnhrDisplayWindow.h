@@ -30,19 +30,25 @@ public:
         HMENU hMenu,
         HINSTANCE hInstance,
         LPVOID lpParam);
+    virtual bool Destruction();
+
+    inline bool SetTargetWindow(HWND hWndTarget);
+    inline HWND GetTargetWindow();
 
     static const WCHAR szWndClassName_[32];
 private:
 	static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	static IDAllocator idallocator_;
+	static IDAllocator timer_idallocator;
 
-	UINT uDisplayDelay = 400;
+	UINT uDisplayDelay;
 	ImgCapture* img_capture_;
     HRModel* hr_model_;
-	HRCache* cache_;
+	HRCache* hr_cache_;
 	
-	HRProcessor* processor_ = HRProcessor::GetInstance();
+	HRProcessor* processor_;
     bool auto_mode_;
+
+    HWND hWndTarget_;
 };
 
