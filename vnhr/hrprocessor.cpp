@@ -1,5 +1,7 @@
 #include "hrprocessor.h"
 
+HRProcessor HRProcessor::instance;
+
 HRProcessor::HRProcessor()
 {
     max_thread_num_ = 3;
@@ -19,10 +21,10 @@ HRProcessor::~HRProcessor()
 
 inline HRProcessor* HRProcessor::GetInstance()
 {
-    return &instance_;
+    return &instance;
 }
 
-bool HRProcessor::ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask)
+bool HRProcessor::ProcessHR(const HRPROCESSTASK* pstTask)
 {
     if (pstTask == nullptr)
         return false;
@@ -31,7 +33,7 @@ bool HRProcessor::ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask)
     HRPROCESSTASK* ret = AlterstTaskList(HRTASK_APPEND, target);
     if (ret != nullptr)
     {
-        PostMessage(hWnd, VNHRM_FREE_BMP, (WPARAM)ret->pbmih, HRPROCESS_DISCARDED);
+        PostMessage(pstTask->hWnd, VNHRM_FREE_BMP, (WPARAM)ret->pbmih, HRPROCESS_DISCARDED);
         free(ret);
     }
     return true;
@@ -75,6 +77,20 @@ bool HRProcessor::SetMaxThreadNum(int max_thread_num)
     CloseHandle(hSemaphoreThread_);
     hSemaphoreThread_ = CreateSemaphore(NULL, 0, max_thread_num_, NULL);
     return true;
+}
+
+const HRPROCESSCONFIG* HRProcessor::GetConfigFor(HWND hWnd)
+{
+    HRProcessor* obj = HRProcessor::GetInstance();
+    std::map<HWND, HRPROCESSCONFIG*>::iterator it = obj->config_map_.find(hWnd);
+    if (it != obj->config_map_.end())
+    {
+        return (*it).second;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
@@ -133,40 +149,24 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
 DWORD WINAPI HRProcessor::RunHR(PVOID lParam)
 {
     HRPROCESSTASK* stCap;
-    RECT stRect;
-    int x, y;
-    int i;
-    double _x, _y;
-    int w, h;
-    BITMAP stBitmap;
-    WCHAR szCurrentDir[128];
-    WCHAR szBuffer[128];
-    WCHAR szBitmapFilePath[128];
-    WCHAR szOutFilePath[128];
-    WCHAR szOutConvertedFilePath[128];
-    WCHAR szFileName[16];
-    WCHAR szTemp[16];
-    WCHAR szCmdLine[256];
-    WIN32_FIND_DATA stFindData;
-    HANDLE hFindFile;
-    STARTUPINFO stStartUp;
-    PROCESS_INFORMATION stProcInfo;
-    BITMAPFILEHEADER* pbmfh;
-    BITMAPINFO* pbmi;
+    const HRPROCESSCONFIG* stConfig;
     BITMAPINFOHEADER* pbmih;
-    BITMAPCOREHEADER* pbmch;
-    BYTE* pBits;
     while (true)
     {
         //MessageBox(NULL, L"RUN!", NULL, MB_OK);
-        WaitForSingleObject(instance_.hSemaphoreThread_, INFINITE);
-        stCap = instance_.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
+        WaitForSingleObject(instance.hSemaphoreThread_, INFINITE);
+        stCap = instance.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
         if (stCap == nullptr)
             // on exiting thread
             break;
+        stConfig = HRProcessor::GetConfigFor(stCap->hWnd);
+        pbmih = stConfig->model->RunHRAsBitmap(stCap->pbmih, &stCap->stRectFrom, &stCap->stRectTo);
 
-        
-        instance_.AlterstTaskList(HRTASK_PROCESS_OVER, stCap);
+        instance.AlterstTaskList(HRTASK_PROCESS_OVER, stCap);
+        PostMessage(stCap->hWnd, VNHRM_FREE_BMP, (WPARAM)stCap->pbmih, HRPROCESS_PROCESSED);
+        PostMessage(stCap->hWnd, VNHRM_HRFINISHED, (WPARAM)pbmih, NULL);
+
+        free(stCap);
     }
     return NULL;
 }

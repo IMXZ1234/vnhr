@@ -32,22 +32,33 @@ public:
         LPVOID lpParam);
     virtual bool Destruction();
 
-    inline bool SetTargetWindow(HWND hWndTarget);
+    inline bool set_target_window(HWND hWndTarget);
     inline HWND GetTargetWindow();
+    inline bool SetImgCapture(ImgCapture* img_capture);
+    inline ImgCapture* GetImgCapture();
+    inline bool SetHRCache(HRCache* hr_cache);
+    inline HRCache* GetHRCache();
+    inline bool SetHRModel(HRModel* hr_model);
+    inline HRModel* get_hr_model();
+    inline HRProcessor* get_processor();
 
     static const WCHAR szWndClassName_[32];
 private:
-	static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-	static IDAllocator timer_idallocator;
+	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR idTimer, DWORD dwTime);
 
 	UINT uDisplayDelay;
+    bool auto_mode_;
+    UINT uAutoInterval;
+    int auto_timerid_;
+
+    BITMAPINFOHEADER* pbmih_;
+
 	ImgCapture* img_capture_;
     HRModel* hr_model_;
 	HRCache* hr_cache_;
-	
+
 	HRProcessor* processor_;
-    bool auto_mode_;
 
     HWND hWndTarget_;
 };

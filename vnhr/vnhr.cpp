@@ -5,6 +5,7 @@
 #include "vnhr.h"
 #include "vnhrdisplaywindow.h"
 #include "vnhrmainwindow.h"
+#include "idallocator.h"
 #include <list>
 #include <vector>
 //#include "opencv2/opencv.hpp"
@@ -42,8 +43,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_VNHRMAIN, szWndClassMain, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_VNHRDISPLAY, szWndClassDisplay, MAX_LOADSTRING);
-    VNHRMainClass(hInstance);
-    VNHRDisplayClass(hInstance);
+    VnhrMainWindow::RegisterWndClass(hInst);
+    VnhrDisplayWindow::RegisterWndClass(hInst);
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
@@ -66,47 +67,47 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int) msg.wParam;
 }
 
-ATOM VNHRMainClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_VNHR);
-    wcex.lpszClassName = szWndClassMain;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-    return RegisterClassExW(&wcex);
-}
-
-ATOM VNHRDisplayClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = DisplayWndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = szWndClassDisplay;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-    return RegisterClassExW(&wcex);
-}
+//ATOM VNHRMainClass(HINSTANCE hInstance)
+//{
+//    WNDCLASSEXW wcex;
+//
+//    wcex.cbSize = sizeof(WNDCLASSEX);
+//
+//    wcex.style = CS_HREDRAW | CS_VREDRAW;
+//    wcex.lpfnWndProc = WndProc;
+//    wcex.cbClsExtra = 0;
+//    wcex.cbWndExtra = 0;
+//    wcex.hInstance = hInstance;
+//    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
+//    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+//    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_VNHR);
+//    wcex.lpszClassName = szWndClassMain;
+//    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+//
+//    return RegisterClassExW(&wcex);
+//}
+//
+//ATOM VNHRDisplayClass(HINSTANCE hInstance)
+//{
+//    WNDCLASSEXW wcex;
+//
+//    wcex.cbSize = sizeof(WNDCLASSEX);
+//
+//    wcex.style = CS_HREDRAW | CS_VREDRAW;
+//    wcex.lpfnWndProc = DisplayWndProc;
+//    wcex.cbClsExtra = 0;
+//    wcex.cbWndExtra = 0;
+//    wcex.hInstance = hInstance;
+//    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
+//    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+//    wcex.lpszMenuName = NULL;
+//    wcex.lpszClassName = szWndClassDisplay;
+//    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+//
+//    return RegisterClassExW(&wcex);
+//}
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {

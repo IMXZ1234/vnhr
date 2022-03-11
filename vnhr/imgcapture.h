@@ -4,6 +4,6 @@
 class ImgCapture
 {
 public:
-	virtual BITMAPFILEHEADER* CaptureAsBitmap(HWND hWnd) = 0;
+	virtual BITMAPINFOHEADER* CaptureAsBitmap(HWND hWnd) = 0;
 };
 

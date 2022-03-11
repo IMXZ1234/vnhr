@@ -1,19 +1,19 @@
 #include "idallocator.h"
 
-std::map<int, IDAllocator*> IDAllocator::allocator_pool_;
+std::map<int, IDAllocator*> IDAllocator::allocator_pool;
 
 IDAllocator* IDAllocator::GetIDAllocatorFor(int id_type)
 {
-	std::map<int, IDAllocator*>::iterator it = allocator_pool_.find(id_type);
+	std::map<int, IDAllocator*>::iterator it = allocator_pool.find(id_type);
 	IDAllocator* obj;
 	// if already exists, provide the IDAllocator object in the pool
-	if (it != allocator_pool_.end())
+	if (it != allocator_pool.end())
 		return (*it).second;
 	else
 	{
 		// create a new IDAllocator object for this specific type
 		obj = new IDAllocator(0, -1);
-		allocator_pool_.insert(std::pair<int, IDAllocator*>(id_type, obj));
+		allocator_pool.insert(std::pair<int, IDAllocator*>(id_type, obj));
 		return obj;
 	}
 }
@@ -57,11 +57,13 @@ int IDAllocator::SetValueAtID(int id, int value)
 	}
 }
 
-int IDAllocator::GetValueAttID(int id)
+int IDAllocator::GetValueAtID(int id)
 {
 	int pos = id - min_id_;
 	if (pos >= 0 && pos < id_vector_.size())
 		return id_vector_[id - min_id_];
+	else
+		return NULL;
 }
 
 bool IDAllocator::SetIDRange(int min_id, int max_id)

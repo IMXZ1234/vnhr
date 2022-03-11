@@ -33,6 +33,8 @@ public:
 private:
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+    static INT_PTR About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+
 	HWND hEdithWndTarget;
 	HWND hButtonStart;
     HWND hStaticSearchTarget;

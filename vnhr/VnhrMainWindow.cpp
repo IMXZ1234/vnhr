@@ -35,6 +35,7 @@ bool VnhrMainWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindow
 LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     WCHAR szBuffer[128];
+    DWORD baseUnit;
     HDC hDCScreen;
     HWND hWndTarget;
     int uScreenX, uScreenY;
@@ -77,7 +78,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             SetCapture(hWnd);
             break;
         case IDM_ABOUT:
-            DialogBox(obj->hInstance_, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            DialogBox(obj->hInstance_, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, VnhrMainWindow::About);
             break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
@@ -117,7 +118,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
     }
     break;
     case WM_CREATE:
-        DWORD baseUnit = GetDialogBaseUnits();
+        baseUnit = GetDialogBaseUnits();
         cxChar = LOWORD(baseUnit);
         cyChar = HIWORD(baseUnit);
         // MessageBox(hWnd, L"create", NULL, MB_OK);
@@ -136,7 +137,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
     return 0;
 }
 
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK VnhrMainWindow::About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)

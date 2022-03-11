@@ -12,6 +12,7 @@
 #define HRTASK_CLEAR_ALL		4
 
 #define VNHRM_FREE_BMP			0x501
+#define VNHRM_HRFINISHED		0x502
 
 #define HRPROCESS_DISCARDED		1
 #define HRPROCESS_PROCESSED		2
@@ -36,13 +37,15 @@ public:
 	static inline HRProcessor* GetInstance();
 	// Schedules the tasks and calls RunHR() at suitable time.
 	// Will send notify message to hWndOwner when processing is complete.
-	bool ProcessHR(HWND hWnd, const HRPROCESSTASK* pstTask);
+	bool ProcessHR(const HRPROCESSTASK* pstTask);
 	// Store the model and cache used by hWnd in internal map.
 	bool Register(HWND hWnd, const HRPROCESSCONFIG* pstConfig);
 	bool Unregister(HWND hWnd);
 	bool SetMaxThreadNum(int max_thread_num);
 private:
-	static HRProcessor instance_;
+	static const HRPROCESSCONFIG* GetConfigFor(HWND hWnd);
+
+	static HRProcessor instance;
 
 	int max_thread_num_;
 	int max_task_list_len_;

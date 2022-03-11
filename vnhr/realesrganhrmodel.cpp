@@ -11,7 +11,7 @@ RealesrganHRModel::~RealesrganHRModel()
     CloseHandle(hMutexCreateFile_);
 }
 
-bool RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const RECT* stRectFrom, BITMAPINFOHEADER* pbmihTo, const RECT* stRectTo)
+BITMAPINFOHEADER* RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const RECT* stRectFrom, const RECT* stRectTo)
 {
     static const WCHAR szHRExePath[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows\\realesrgan-ncnn-vulkan.exe";
     static const WCHAR szffmpegExePath[] = L"C:\\Users\\asus\\coding\\vsc++\\ffmpeg-4.4.1-full_build-shared\\bin\\ffmpeg.exe";
@@ -21,11 +21,7 @@ bool RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const R
     static const WCHAR szffmpegBase[] = L"%s -i %s %s";
     static const WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
     WCHAR szCurrentDir[128];
-    int x, y;
     int i;
-    double _x, _y;
-    int w, h;
-    BITMAP stBitmap;
     WCHAR szBuffer[128];
     WCHAR szBitmapFilePath[128];
     WCHAR szOutFilePath[128];
@@ -37,10 +33,11 @@ bool RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const R
     HANDLE hFindFile;
     STARTUPINFO stStartUp;
     PROCESS_INFORMATION stProcInfo;
+    BITMAPINFOHEADER* pbmihTo;
 
     GetCurrentDirectory(128, szCurrentDir);
     //MessageBox(NULL, szCurrentDir, L"szCurrentDir", MB_OK);
-    int i = -1;
+    i = -1;
     //find the first file name which is available to create .bmp(in other word, the path does not exist), 
     //as there may be multiple working threads creating files
     WaitForSingleObject(hMutexCreateFile_, NULL);
@@ -103,10 +100,5 @@ bool RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const R
     DeleteFile(szBitmapFilePath);
     DeleteFile(szOutFilePath);
     DeleteFile(szOutConvertedFilePath);
-    if (pbmihTo == nullptr)
-    {
-        MessageBox(NULL, L"Load Failed!", NULL, MB_OK);
-        return false;
-    }
-    return true;
+    return pbmihTo;
 }

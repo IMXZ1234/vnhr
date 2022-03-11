@@ -1,44 +1,22 @@
 #include "VnhrDisplayWindow.h"
 
 const WCHAR VnhrDisplayWindow::szWndClassName_[32] = TEXT("VnhrDisplayWindow");
-IDAllocator VnhrDisplayWindow::timer_idallocator(0, -1);
 
-void CALLBACK Timerproc(
-    HWND hWnd,
-    UINT unnamedParam2,
-    UINT_PTR idTimer,
-    DWORD unnamedParam4
-)
+void CALLBACK VnhrDisplayWindow::DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR idTimer, DWORD dwTime)
 {
-    WCHAR szBuffer[128];
-    wsprintf(szBuffer, L"in timer proc %x", idTimer);
-    MessageBox(NULL, szBuffer, NULL, MB_OK);
-    KillTimer(hWnd, idTimer);
-}
-
-void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DWORD dwTime)
-{
-    RECT stRect;
-    HDC hDCCompat;
-    HBITMAP hBitmapCompat;
-    CAPSTRUCT stCap;
-    WCHAR buffer[128];
-    KillTimer(NULL, iTimerID);
-    hDCTarget = GetDC(hWndTarget_);
-    hDCCompat = CreateCompatibleDC(hDCTarget);
-    GetClientRect(hWndTarget, &stRect);
-    hBitmapCompat = CreateCompatibleBitmap(hDCTarget, stRect.right - stRect.left, stRect.bottom - stRect.top);
-    SelectObject(hDCCompat, hBitmapCompat);
-    BitBlt(hDCCompat, 0, 0, stRect.right, stRect.bottom, hDCTarget, 0, 0, SRCCOPY);
-
-    ReleaseDC(hWndTarget, hDCTarget);
-    stCap.hBitmap = hBitmapCompat;
-    stCap.hDC = hDCCompat;
-    AlterstCapList(&stCap, HRTASK_APPEND);
-    //ViewhDCListLen();
-    ReleaseSemaphore(hSemaphoreThread, 1, NULL);
-    //ViewhDCListLen();
-    //MessageBox(hWnd, L"released!", NULL, MB_OK);
+    VnhrDisplayWindow* obj = (VnhrDisplayWindow*)VnhrDisplayWindow::GetObjectforWnd(hWnd);
+    if (idTimer != obj->auto_timerid_)
+        KillTimer(hWnd, idTimer);
+    HRPROCESSTASK process_task;
+    RECT stRectFrom, stRectTo;
+    BITMAPINFOHEADER* pbmih = obj->img_capture_->CaptureAsBitmap(hWnd);
+    process_task.hWnd = hWnd;
+    process_task.pbmih = pbmih;
+    GetClientRect(hWnd, &stRectTo);
+    GetClientRect(obj->hWndTarget_, &stRectFrom);
+    memcpy_s(&(process_task.stRectFrom), sizeof(RECT), &stRectFrom, sizeof(RECT));
+    memcpy_s(&(process_task.stRectTo), sizeof(RECT), &stRectTo, sizeof(RECT));
+    obj->processor_->ProcessHR(&process_task);
 }
 
 ATOM VnhrDisplayWindow::RegisterWndClass(HINSTANCE hInstance)
@@ -70,8 +48,11 @@ bool VnhrDisplayWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWin
     img_capture_ = new GDIImgCapture();
     processor_ = HRProcessor::GetInstance();
     auto_mode_ = false;
+    auto_timerid_ = 0;
+    uAutoInterval = 1000;
     uDisplayDelay = 400;
     hWndTarget_ = NULL;
+    pbmih_ = NULL;
     if (VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam))
         return false;
     process_config.cache = hr_cache_;
@@ -89,7 +70,7 @@ bool VnhrDisplayWindow::Destruction()
     return VnhrWindow::Destruction();
 }
 
-inline bool VnhrDisplayWindow::SetTargetWindow(HWND hWndTarget)
+inline bool VnhrDisplayWindow::set_target_window(HWND hWndTarget)
 {
     hWndTarget_ = hWndTarget;
     return true;
@@ -100,19 +81,59 @@ inline HWND VnhrDisplayWindow::GetTargetWindow()
     return hWndTarget_;
 }
 
+inline bool VnhrDisplayWindow::SetImgCapture(ImgCapture* img_capture)
+{
+    img_capture_ = img_capture;
+    return true;
+}
+
+inline ImgCapture* VnhrDisplayWindow::GetImgCapture()
+{
+    return img_capture_;
+}
+
+inline bool VnhrDisplayWindow::SetHRCache(HRCache* hr_cache)
+{
+    hr_cache_ = hr_cache;
+    return true;
+}
+
+inline HRCache* VnhrDisplayWindow::GetHRCache()
+{
+    return hr_cache_;
+}
+
+inline bool VnhrDisplayWindow::SetHRModel(HRModel* hr_model)
+{
+    hr_model_ = hr_model;
+    return true;
+}
+
+inline HRModel* VnhrDisplayWindow::get_hr_model()
+{
+    return hr_model_;
+}
+
+inline HRProcessor* VnhrDisplayWindow::get_processor()
+{
+    return processor_;
+}
+
 LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static WCHAR szBuffer[128];
     RECT stRect;
-    HBITMAP hBMPCompat;
     int x, y, i;
     double _x, _y;
     VnhrDisplayWindow* obj = (VnhrDisplayWindow*)GetObjectforWnd(hWnd);
-    int available_timerid;
     UINT idTimer;
     switch (message)
     {
-    case WM_TIMER:
+    case VNHRM_FREE_BMP:
+        free((LPVOID)wParam);
+        break;
+    case VNHRM_HRFINISHED:
+        obj->pbmih_ = (BITMAPINFOHEADER*)wParam;
         break;
     case WM_COMMAND:
     {
@@ -123,16 +144,14 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
-        case VNHRM_FREE_BMP:
-            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         case IDC_AUTO:
             MessageBox(hWnd, L"Install", NULL, MB_OK);
-            available_timerid = timer_idallocator.AllocateID();
-            if (available_timerid == -1)
+            obj->auto_timerid_ = IDAllocator::GetIDAllocatorFor(IDALLOCATOR_TIMER)->AllocateID();
+            if (obj->auto_timerid_ == -1)
                 break;
-            idTimer = SetTimer(hWnd, available_timerid, 1000, Timerproc);
+            idTimer = SetTimer(hWnd, obj->auto_timerid_, obj->uAutoInterval, VnhrDisplayWindow::DisplayWndTimerProc);
             wsprintf(szBuffer, L"timer SET %x", idTimer);
             MessageBox(NULL, szBuffer, NULL, MB_OK);
             //hDllhk = LoadLibrary(L"hk.dll");
@@ -146,7 +165,9 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         HDC hdc = BeginPaint(hWnd, &ps);
         //GetClientRect(hWndDisplay, &stRect);
         //StretchDIBits(hDCDisplay, 0, 0, stRect.right - stRect.left, stRect.bottom - stRect.top, 0, 0, w, h, pBits, pbmi, DIB_RGB_COLORS, SRCCOPY);
-        SetDIBitsToDevice(hdc, 0, 0, w, h, 0, 0, 0, h, pBits, pbmi, DIB_RGB_COLORS);
+        if (obj->pbmih_)
+            SetDIBitsToDevice(hdc, 0, 0, obj->pbmih_->biWidth, obj->pbmih_->biWidth, 0, 0, 0, obj->pbmih_->biHeight, 
+                obj->pbmih_ + sizeof(BITMAPINFOHEADER), (BITMAPINFO*)obj->pbmih_, DIB_RGB_COLORS);
         EndPaint(hWnd, &ps);
     }
     break;
@@ -167,14 +188,14 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         //wsprintf(buffer, L"%d, %d", x, y);
         ////MessageBox(hWnd, buffer, NULL, MB_OK);
         //SetWindowText(hLabelTest, buffer);
-        if (!GetClientRect(hWndTarget, &stRect))
-            SendMessage(hWndDisplay, WM_DESTROY, NULL, NULL);
+        if (!GetClientRect(obj->hWndTarget_, &stRect))
+            SendMessage(hWnd, WM_DESTROY, NULL, NULL);
         _x = (double)x * (double)(stRect.right - stRect.left);
         _y = (double)y * (double)(stRect.bottom - stRect.top);
         GetClientRect(hWnd, &stRect);
         x = (WORD)(_x / (double)(stRect.right - stRect.left));
         y = (WORD)(_y / (double)(stRect.bottom - stRect.top));
-        PostMessage(hWndTarget, message, wParam, MAKELPARAM(x, y));
+        PostMessage(obj->hWndTarget_, message, wParam, MAKELPARAM(x, y));
         //error = GetLastError();
         //wsprintf(buffer, L"%d", error);
         //SetWindowText(hLabelTest3, buffer);

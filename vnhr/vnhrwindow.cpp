@@ -31,6 +31,7 @@ bool VnhrWindow::Destruction()
 {
     DestroyWindow(hWnd_);
     window_object_map.erase(hWnd_);
+    return true;
 }
 
 inline VnhrWindow* VnhrWindow::GetObjectforWnd(HWND hWnd)

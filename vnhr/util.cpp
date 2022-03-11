@@ -61,7 +61,7 @@ BITMAPFILEHEADER* LoadDIBfromFile(const WCHAR* pszFilePath)
 
 bool LoadPackedDIBfromFileToBuffer(const WCHAR* pszFilePath, BITMAPINFOHEADER* pbmihTo, DWORD dwBufferSize)
 {
-
+    return true;
 }
 
 bool GetDIBWidthHeight(BITMAPINFOHEADER* pbmih, int* width, int* height)
