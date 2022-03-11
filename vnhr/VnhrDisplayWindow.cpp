@@ -1,5 +1,75 @@
 #include "VnhrDisplayWindow.h"
 
+const WCHAR VnhrDisplayWindow::szWndClassName_[32] = TEXT("VnhrDisplayWindow");
+IDAllocator VnhrDisplayWindow::idallocator_(0, -1);
+
+void CALLBACK Timerproc(
+    HWND hWnd,
+    UINT unnamedParam2,
+    UINT_PTR idTimer,
+    DWORD unnamedParam4
+)
+{
+    WCHAR szBuffer[128];
+    wsprintf(szBuffer, L"in timer proc %x", idTimer);
+    MessageBox(NULL, szBuffer, NULL, MB_OK);
+    KillTimer(hWnd, idTimer);
+}
+
+void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DWORD dwTime)
+{
+    RECT stRect;
+    HDC hDCCompat;
+    HBITMAP hBitmapCompat;
+    CAPSTRUCT stCap;
+    WCHAR buffer[128];
+    KillTimer(NULL, iTimerID);
+    hDCTarget = GetDC(hWndTarget);
+    hDCCompat = CreateCompatibleDC(hDCTarget);
+    GetClientRect(hWndTarget, &stRect);
+    hBitmapCompat = CreateCompatibleBitmap(hDCTarget, stRect.right - stRect.left, stRect.bottom - stRect.top);
+    SelectObject(hDCCompat, hBitmapCompat);
+    BitBlt(hDCCompat, 0, 0, stRect.right, stRect.bottom, hDCTarget, 0, 0, SRCCOPY);
+
+    ReleaseDC(hWndTarget, hDCTarget);
+    stCap.hBitmap = hBitmapCompat;
+    stCap.hDC = hDCCompat;
+    AlterstCapList(&stCap, HRTASK_APPEND);
+    //ViewhDCListLen();
+    ReleaseSemaphore(hSemaphoreThread, 1, NULL);
+    //ViewhDCListLen();
+    //MessageBox(hWnd, L"released!", NULL, MB_OK);
+}
+
+ATOM VnhrDisplayWindow::RegisterWndClass(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex;
+
+    wcex.cbSize = sizeof(WNDCLASSEX);
+
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_VNHR);
+    wcex.lpszClassName = VnhrDisplayWindow::szWndClassName_;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    return RegisterClassExW(&wcex);
+}
+
+bool VnhrDisplayWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+    VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+    cache_ = new HRCache();
+    img_capture_ = new ImgCapture();
+    auto_mode_ = false;
+    return true;
+}
 
 LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -8,9 +78,12 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
     HBITMAP hBMPCompat;
     int x, y, i;
     double _x, _y;
-    VnhrDisplayWindow* pInstance = (VnhrDisplayWindow*)GetObjectforWnd(hWnd);
+    VnhrDisplayWindow* obj = (VnhrDisplayWindow*)GetObjectforWnd(hWnd);
+    int available_timerid;
     switch (message)
     {
+    case WM_TIMER:
+        break;
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
@@ -24,6 +97,16 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
             break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
+        case IDC_AUTO:
+            MessageBox(hWnd, L"Install", NULL, MB_OK);
+            available_timerid = idallocator_.AllocateID();
+            if (available_timerid == -1)
+                break;
+            idTimer = SetTimer(hWnd, available_timerid, 1000, Timerproc);
+            wsprintf(szBuffer, L"timer SET %x", idTimer);
+            MessageBox(NULL, szBuffer, NULL, MB_OK);
+            //hDllhk = LoadLibrary(L"hk.dll");
+            break;
         }
     }
     break;
@@ -46,7 +129,7 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         // create timers which won't replace each other
         //SetTimer(hWnd, ID_TIMERDISPLAYDELAY, uDisplayDelay, DisplayWndTimerProc);
         //hIDTimerList.push_back(SetTimer(NULL, 0, uDisplayDelay, DisplayWndTimerProc));
-        SetTimer(NULL, 0, uDisplayDelay, DisplayWndTimerProc);
+        SetTimer(NULL, 0, obj->uDisplayDelay, DisplayWndTimerProc);
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
         x = LOWORD(lParam);
@@ -67,36 +150,11 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         //SetWindowText(hLabelTest3, buffer);
         break;
     case WM_CREATE:
-        bThreadExit = false;
-        hSemaphoreThread = CreateSemaphore(NULL, 0, ustCapCapacity, NULL);
-        hThread = CreateThread(NULL, 0, RunHR, NULL, 0, &dwThreadId);
-        hMutexAlter = CreateMutex(NULL, FALSE, NULL);
-        hMutexCreateFile = CreateMutex(NULL, FALSE, NULL);
-        //hLabelTest = CreateWindow(TEXT("STATIC"), NULL, WS_VISIBLE | WS_CHILD, cxChar, cyChar, 20 * cxChar, cyChar * 7 / 4, hWnd, (HMENU)ID_LABELTEST, hInst, NULL);
-        //hLabelTest2 = CreateWindow(TEXT("STATIC"), NULL, WS_VISIBLE | WS_CHILD, cxChar, cyChar * 2, 20 * cxChar, cyChar * 7 / 4, hWnd, (HMENU)ID_LABELTEST, hInst, NULL);
-        //hLabelTest3 = CreateWindow(TEXT("STATIC"), NULL, WS_VISIBLE | WS_CHILD, cxChar, cyChar * 3, 20 * cxChar, cyChar * 7 / 4, hWnd, (HMENU)ID_LABELTEST, hInst, NULL);
+
+        processor_->Register(hWnd, )
         break;
     case WM_DESTROY:
-        TerminateThread(hThread, 0);
-        for (auto it = pstCapProcessList.cbegin(); it != pstCapProcessList.cend(); ++it)
-        {
-            pstCap = *it;
-            DeleteObject(pstCap->hBitmap);
-            DeleteDC(pstCap->hDC);
-        }
-        for (auto it = pstCapList.cbegin(); it != pstCapList.cend(); ++it)
-        {
-            pstCap = *it;
-            DeleteObject(pstCap->hBitmap);
-            DeleteDC(pstCap->hDC);
-        }
-        AlterstCapList(NULL, HRTASK_CLEAR_ALL);
-        //// wait for running threads to finish
-        //SwitchToThread();
-        CloseHandle(hThread);
-        CloseHandle(hMutexAlter);
-        CloseHandle(hMutexCreateFile);
-        CloseHandle(hSemaphoreThread);
+        processor_->Unregister(hWnd);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

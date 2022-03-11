@@ -1,5 +1,7 @@
 #include "vnhrwindow.h"
 
+const WCHAR VnhrWindow::szWndClassName_[32] = TEXT("VnhrWindow");
+
 bool VnhrWindow::Init(
     DWORD dwExStyle,
     LPCWSTR lpClassName,
@@ -34,7 +36,23 @@ inline VnhrWindow* VnhrWindow::GetObjectforWnd(HWND hWnd)
 	return nullptr;
 }
 
-ATOM VnhrWindow::RegisterWndClass()
+ATOM VnhrWindow::RegisterWndClass(HINSTANCE hInstance)
 {
-    return 0;
+    WNDCLASSEXW wcex;
+
+    wcex.cbSize = sizeof(WNDCLASSEX);
+
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = DefWindowProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VNHR));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_VNHR);
+    wcex.lpszClassName = VnhrWindow::szWndClassName_;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    return RegisterClassExW(&wcex);
 }

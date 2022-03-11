@@ -10,11 +10,12 @@ class IDAllocator
 public:
 	explicit IDAllocator(int min_id, int max_id);
 	~IDAllocator() = default;
-	inline int AllocateID();
-	inline int SetValueAtID(int id, int value);
-	inline int GetValueAttID(int id);
-	inline bool SetIDRange(int min_id, int max_id);
-	inline int DeallocateID(int id);
+	int AllocateID();
+	int SetValueAtID(int id, int value);
+	int GetValueAttID(int id);
+	bool SetIDRange(int min_id, int max_id);
+	int DeallocateID(int id);
+	bool IsIDValid(int id);
 private:
 	std::vector<int> id_vector_;
 	int min_id_;
