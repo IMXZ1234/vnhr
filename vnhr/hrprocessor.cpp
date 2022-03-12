@@ -4,28 +4,34 @@ HRProcessor HRProcessor::instance;
 
 HRProcessor::HRProcessor()
 {
+    DWORD thread_id;
+    //MessageBox(NULL, L"PROCESSOR INIT", NULL, MB_OK);
     max_thread_num_ = 3;
     max_task_list_len_ = 1;
     bThreadExit_ = false;
     InitializeCriticalSection(&stCS_);
     hMutexAlter_ = CreateMutex(NULL, FALSE, NULL);
     hSemaphoreThread_ = CreateSemaphore(NULL, 0, max_thread_num_, NULL);
+    thread_pool_.resize(max_thread_num_);
+    thread_ids_.resize(max_thread_num_);
+    for (int i = 0; i < max_thread_num_; i++)
+    {
+        thread_pool_[i] = CreateThread(NULL, 0, RunHR, NULL, 0, &thread_id);
+        thread_ids_[i] = thread_id;
+    }
 }
 
 HRProcessor::~HRProcessor()
 {
+    bThreadExit_ = true;
     DeleteCriticalSection(&stCS_);
     CloseHandle(hMutexAlter_);
     CloseHandle(hSemaphoreThread_);
 }
 
-inline HRProcessor* HRProcessor::GetInstance()
-{
-    return &instance;
-}
-
 bool HRProcessor::ProcessHR(const HRPROCESSTASK* pstTask)
 {
+    WCHAR szBuffer[128];
     if (pstTask == nullptr)
         return false;
     HRPROCESSTASK* target = (HRPROCESSTASK*)malloc(sizeof(HRPROCESSTASK));
@@ -33,9 +39,12 @@ bool HRProcessor::ProcessHR(const HRPROCESSTASK* pstTask)
     HRPROCESSTASK* ret = AlterstTaskList(HRTASK_APPEND, target);
     if (ret != nullptr)
     {
+        wsprintf(szBuffer, L"sending free bmp %x", pstTask->hWnd);
+        MessageBox(NULL, szBuffer, NULL, MB_OK);
         PostMessage(pstTask->hWnd, VNHRM_FREE_BMP, (WPARAM)ret->pbmih, HRPROCESS_DISCARDED);
         free(ret);
     }
+    ReleaseSemaphore(hSemaphoreThread_, 1, NULL);
     return true;
 }
 
@@ -108,7 +117,7 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
             target = task_waiting_list_.front();
             task_waiting_list_.pop_front();
         }
-        task_processing_list_.push_back(pstTask);
+        task_waiting_list_.push_back(pstTask);
         break;
     case HRTASK_PROCESS_OVER:
         //erase item from under process list
@@ -123,6 +132,7 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
         }
         break;
     case HRTASK_CLEAR_ALL:
+        // memory of members should be freed outside by caller
         for (it = task_processing_list_.cbegin(); it != task_processing_list_.cend(); ++it)
             free(*it);
         for (it = task_waiting_list_.cbegin(); it != task_waiting_list_.cend(); ++it)
@@ -136,8 +146,8 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
             target = task_waiting_list_.front();
             task_waiting_list_.pop_front();
             task_processing_list_.push_back(target);
-            break;
         }
+        break;
     default:
         break;
     }
@@ -148,25 +158,28 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
 
 DWORD WINAPI HRProcessor::RunHR(PVOID lParam)
 {
-    HRPROCESSTASK* stCap;
+    HRPROCESSTASK* pstTask;
     const HRPROCESSCONFIG* stConfig;
     BITMAPINFOHEADER* pbmih;
     while (true)
     {
-        //MessageBox(NULL, L"RUN!", NULL, MB_OK);
+        MessageBox(NULL, L"RUN!", NULL, MB_OK);
         WaitForSingleObject(instance.hSemaphoreThread_, INFINITE);
-        stCap = instance.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
-        if (stCap == nullptr)
+        MessageBox(NULL, L"RUNNING!", NULL, MB_OK);
+        pstTask = instance.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
+        if (pstTask == nullptr)
             // on exiting thread
+            MessageBox(NULL, L"EXITING!", NULL, MB_OK);
             break;
-        stConfig = HRProcessor::GetConfigFor(stCap->hWnd);
-        pbmih = stConfig->model->RunHRAsBitmap(stCap->pbmih, &stCap->stRectFrom, &stCap->stRectTo);
+        MessageBox(NULL, L"WORKING!", NULL, MB_OK);
+        stConfig = HRProcessor::GetConfigFor(pstTask->hWnd);
+        pbmih = stConfig->model->RunHRAsBitmap(pstTask->pbmih, &pstTask->stRectFrom, &pstTask->stRectTo);
 
-        instance.AlterstTaskList(HRTASK_PROCESS_OVER, stCap);
-        PostMessage(stCap->hWnd, VNHRM_FREE_BMP, (WPARAM)stCap->pbmih, HRPROCESS_PROCESSED);
-        PostMessage(stCap->hWnd, VNHRM_HRFINISHED, (WPARAM)pbmih, NULL);
+        instance.AlterstTaskList(HRTASK_PROCESS_OVER, pstTask);
+        PostMessage(pstTask->hWnd, VNHRM_FREE_BMP, (WPARAM)pstTask->pbmih, HRPROCESS_PROCESSED);
+        PostMessage(pstTask->hWnd, VNHRM_HRFINISHED, (WPARAM)pbmih, NULL);
 
-        free(stCap);
+        free(pstTask);
     }
     return NULL;
 }

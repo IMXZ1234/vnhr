@@ -9,7 +9,7 @@ ATOM VnhrMainWindow::RegisterWndClass(HINSTANCE hInstance)
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = VnhrMainWindow::WndProc;
+    wcex.lpfnWndProc = NativeWndProc;
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
@@ -29,6 +29,7 @@ bool VnhrMainWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindow
     hEdithWndTarget = NULL;
     hButtonStart = NULL;
     hStaticSearchTarget = NULL;
+    MessageBox(NULL, L"MAIN", NULL , MB_OK);
     return VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
 
@@ -43,7 +44,6 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
     POINT point;
     static HWND hLastWndUnderMouse = NULL;
     static HWND hWndUnderMouse = NULL;
-    VnhrMainWindow* obj = (VnhrMainWindow*)GetObjectforWnd(hWnd);
     VnhrDisplayWindow* display_window;
     switch (message)
     {
@@ -54,7 +54,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         switch (wmId)
         {
         case ID_BUTTONSTART:
-            GetWindowText(obj->hEdithWndTarget, szBuffer, 128);
+            GetWindowText(hEdithWndTarget, szBuffer, 128);
             hWndTarget = (HWND)wstrhex2int(szBuffer);
             if (!IsWindow(hWndTarget))
             {
@@ -66,22 +66,26 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             uScreenX = GetDeviceCaps(hDCScreen, HORZRES);
             uScreenY = GetDeviceCaps(hDCScreen, VERTRES);
             ReleaseDC(NULL, hDCScreen);
-            display_window = new VnhrDisplayWindow();
-            display_window->Init(NULL, szWndClassName_, szBuffer, WS_VISIBLE | WS_POPUP, 0, 0,
-                uScreenX, uScreenY, hWnd, NULL, obj->hInstance_, NULL);
+            display_window = new VnhrDisplayWindow;
+            //GetWindowText(hWndTarget, szBuffer, 128);
+            //MessageBox(hWnd, szBuffer, L"hWndTarget title", MB_OK);
+            display_window->Init(NULL, VnhrDisplayWindow::szWndClassName_, szBuffer, WS_VISIBLE, 0, 0,
+                uScreenX, uScreenY, hWnd, NULL, hInstance_, NULL);
+            display_window->set_target_window(hWndTarget);
+            MessageBox(hWnd, L"display Init complete", L"hWndTarget", MB_OK);
             break;
         case ID_STATICSEARCHTARGET:
-            //MessageBox(hWnd, L"Static clicked", NULL, MB_OK);
-            obj->bSearchingTarget = TRUE;
+            //MessageBox(hWnd, L"Static clicked", NULL, MB_OK); | WS_POPUP
+            bSearchingTarget = TRUE;
             hWndUnderMouse = NULL;
             hLastWndUnderMouse = NULL;
             SetCapture(hWnd);
             break;
         case IDM_ABOUT:
-            DialogBox(obj->hInstance_, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, VnhrMainWindow::About);
+            DialogBox(hInstance_, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, VnhrMainWindow::About);
             break;
         case IDM_EXIT:
-            DestroyWindow(hWnd);
+            Destruction();
             break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
@@ -89,7 +93,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
     }
     break;
     case WM_MOUSEMOVE:
-        if (obj->bSearchingTarget && wParam == MK_LBUTTON)
+        if (bSearchingTarget && wParam == MK_LBUTTON)
         {
             GetCursorPos(&point);
             //point.x = GET_X_LPARAM(lParam);
@@ -98,16 +102,16 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             if (hWndUnderMouse != hLastWndUnderMouse)
             {
                 wsprintf(szBuffer, L"%X", hWndUnderMouse);
-                SetWindowText(obj->hEdithWndTarget, szBuffer);
+                SetWindowText(hEdithWndTarget, szBuffer);
                 wsprintf(szBuffer, L"x: %d y: %d", point.x, point.y);
-                SetWindowText(obj->hStaticSearchTarget, szBuffer);
+                SetWindowText(hStaticSearchTarget, szBuffer);
                 hLastWndUnderMouse = hWndUnderMouse;
             }
         }
         break;
     case WM_LBUTTONUP:
         ReleaseCapture();
-        obj->bSearchingTarget = FALSE;
+        bSearchingTarget = FALSE;
         break;
     case WM_PAINT:
     {
@@ -122,13 +126,12 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         cxChar = LOWORD(baseUnit);
         cyChar = HIWORD(baseUnit);
         // MessageBox(hWnd, L"create", NULL, MB_OK);
-        obj->hEdithWndTarget = CreateWindow(TEXT("EDIT"), NULL, WS_CHILD | WS_VISIBLE, cxChar, cyChar, cxChar * 20, cyChar * 2, hWnd, (HMENU)ID_EDITHWNDTARTGET, obj->hInstance_, NULL);
-        obj->hStaticSearchTarget = CreateWindow(TEXT("STATIC"), TEXT("Find\nWindow"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, cxChar, cyChar * 4, cxChar * 10, cyChar * 10, hWnd, (HMENU)ID_STATICSEARCHTARGET, obj->hInstance_, NULL);
-        obj->hButtonStart = CreateWindow(TEXT("BUTTON"), NULL, WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, cxChar, cyChar * 16, cxChar * 20, cyChar * 2, hWnd, (HMENU)ID_BUTTONSTART, obj->hInstance_, NULL);
+        hEdithWndTarget = CreateWindow(TEXT("EDIT"), NULL, WS_CHILD | WS_VISIBLE, cxChar, cyChar / 2, cxChar * 20, cyChar, hWnd, (HMENU)ID_EDITHWNDTARTGET, hInstance_, NULL);
+        hStaticSearchTarget = CreateWindow(TEXT("STATIC"), TEXT("Find\nWindow"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, cxChar, cyChar * 3 / 2, cxChar * 8, cyChar * 4, hWnd, (HMENU)ID_STATICSEARCHTARGET, hInstance_, NULL);
+        hButtonStart = CreateWindow(TEXT("BUTTON"), NULL, WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, cxChar, cyChar * 6, cxChar * 20, cyChar *7 / 4, hWnd, (HMENU)ID_BUTTONSTART, hInstance_, NULL);
         break;
     case WM_DESTROY:
-        obj->Destruction();
-        delete obj;
+        delete this;
         PostQuitMessage(0);
         break;
     default:

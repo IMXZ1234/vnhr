@@ -121,6 +121,3 @@ BOOL UninstallCallWndProcRetHook(HOOKINFO* pstHookInfo)
     }
     return FALSE;
 }
-
-
-BOOL Install

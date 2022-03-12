@@ -32,19 +32,60 @@ public:
         LPVOID lpParam);
     virtual bool Destruction();
 
-    inline bool set_target_window(HWND hWndTarget);
-    inline HWND GetTargetWindow();
-    inline bool SetImgCapture(ImgCapture* img_capture);
-    inline ImgCapture* GetImgCapture();
-    inline bool SetHRCache(HRCache* hr_cache);
-    inline HRCache* GetHRCache();
-    inline bool SetHRModel(HRModel* hr_model);
-    inline HRModel* get_hr_model();
-    inline HRProcessor* get_processor();
+
+    inline bool set_target_window(HWND hWndTarget)
+    {
+        hWndTarget_ = hWndTarget;
+        return true;
+    }
+
+    inline HWND get_target_window()
+    {
+        return hWndTarget_;
+    }
+
+    inline bool set_img_capture(ImgCapture* img_capture)
+    {
+        img_capture_ = img_capture;
+        return true;
+    }
+
+    inline ImgCapture* get_img_capture()
+    {
+        return img_capture_;
+    }
+
+    inline bool set_hr_cache(HRCache* hr_cache)
+    {
+        hr_cache_ = hr_cache;
+        return true;
+    }
+
+    inline HRCache* get_hr_cache()
+    {
+        return hr_cache_;
+    }
+
+    inline bool set_hr_model(HRModel* hr_model)
+    {
+        hr_model_ = hr_model;
+        return true;
+    }
+
+    inline HRModel* get_hr_model()
+    {
+        return hr_model_;
+    }
+
+    inline HRProcessor* get_processor()
+    {
+        return processor_;
+    }
+
 
     static const WCHAR szWndClassName_[32];
 private:
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	virtual LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     static void CALLBACK DisplayWndTimerProc(HWND hWnd, UINT message, UINT_PTR idTimer, DWORD dwTime);
 
 	UINT uDisplayDelay;
@@ -53,6 +94,7 @@ private:
     int auto_timerid_;
 
     BITMAPINFOHEADER* pbmih_;
+    HDC hDCDisplayCache_;
 
 	ImgCapture* img_capture_;
     HRModel* hr_model_;

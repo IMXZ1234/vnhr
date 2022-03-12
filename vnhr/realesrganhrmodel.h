@@ -7,7 +7,7 @@ class RealesrganHRModel :
 {
 public:
 	RealesrganHRModel();
-	~RealesrganHRModel();
+	virtual ~RealesrganHRModel();
 	virtual BITMAPINFOHEADER* RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const RECT* stRectFrom, const RECT* stRectTo);
 private:
 	HANDLE hMutexCreateFile_;

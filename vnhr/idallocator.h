@@ -3,7 +3,10 @@
 #include <map>
 
 #define DEFAULT_MAX_ID_NUM	1024
+#define ALLOCATED_FLAG		1
+
 #define IDALLOCATOR_TIMER	0
+
 
 // Used when a number of different int(unsigned int) IDs are needed.
 // Maps IDs to int(unsigned int) values.

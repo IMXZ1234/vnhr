@@ -10,7 +10,10 @@ public:
 	// creates the window and insert a pair of hWnd and this VnhrWindow instance's pointer into window_object_map
 	// has the same param as CreateWindowEx()
 	static ATOM RegisterWndClass(HINSTANCE hInstance);
-	static VnhrWindow* GetObjectforWnd(HWND hWnd);
+    inline static VnhrWindow* GetObjectforWnd(HWND hWnd)
+    {
+        return reinterpret_cast<VnhrWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+    }
 
     virtual bool Init(
          DWORD dwExStyle,
@@ -30,7 +33,9 @@ public:
 
     static const WCHAR szWndClassName_[32];
 protected:
-	static std::map<HWND, VnhrWindow*> window_object_map;
+    static LRESULT CALLBACK NativeWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+    virtual LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	HINSTANCE hInstance_;
 	HWND hWndParent_;

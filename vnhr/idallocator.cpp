@@ -33,8 +33,9 @@ int IDAllocator::AllocateID()
 	int i;
 	for (i = 0; i < id_vector_.size(); ++i)
 	{
-		if (id_vector_[i] != NULL)
+		if (id_vector_[i] == NULL)
 		{
+			id_vector_[i] = ALLOCATED_FLAG;
 			return i + min_id_;
 		}
 	}

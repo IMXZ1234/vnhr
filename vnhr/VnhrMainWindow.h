@@ -31,7 +31,7 @@ public:
 
 	static const WCHAR szWndClassName_[32];
 private:
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	virtual LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     static INT_PTR About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 

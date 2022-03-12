@@ -2,6 +2,7 @@
 #include "framework.h"
 #include <map>
 #include <list>
+#include <vector>
 #include "hrcache.h"
 #include "hrmodel.h"
 #include "util.h"
@@ -34,7 +35,10 @@ struct HRPROCESSTASK
 class HRProcessor
 {
 public:
-	static inline HRProcessor* GetInstance();
+	static inline HRProcessor* GetInstance()
+	{
+		return &instance;
+	}
 	// Schedules the tasks and calls RunHR() at suitable time.
 	// Will send notify message to hWndOwner when processing is complete.
 	bool ProcessHR(const HRPROCESSTASK* pstTask);
@@ -50,6 +54,8 @@ private:
 	int max_thread_num_;
 	int max_task_list_len_;
 	std::map<HWND, HRPROCESSCONFIG*> config_map_;
+	std::vector<HANDLE> thread_pool_;
+	std::vector<DWORD> thread_ids_;
 	std::list<HRPROCESSTASK*> task_waiting_list_;
 	std::list<HRPROCESSTASK*> task_processing_list_;
 
