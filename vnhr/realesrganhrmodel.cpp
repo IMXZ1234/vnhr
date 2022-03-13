@@ -1,4 +1,12 @@
 #include "realesrganhrmodel.h"
+#include <pathcch.h>
+
+static const WCHAR szHRExePath[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows\\realesrgan-ncnn-vulkan.exe";
+static const WCHAR szffmpegExePath[] = L"C:\\Users\\asus\\coding\\vsc++\\ffmpeg-4.4.1-full_build-shared\\bin\\ffmpeg.exe";
+static const WCHAR szModelrealesrgan_x4plus_anime[] = L"realesrgan-x4plus-anime";
+static const WCHAR szCmdLineBase[] = L"%s -i %s -o %s -s %d -n %s";
+static const WCHAR szffmpegBase[] = L"%s -i %s %s";
+static const WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
 
 RealesrganHRModel::RealesrganHRModel()
 {
@@ -13,13 +21,10 @@ RealesrganHRModel::~RealesrganHRModel()
 
 BITMAPINFOHEADER* RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmihFrom, const RECT* stRectFrom, const RECT* stRectTo)
 {
-    static const WCHAR szHRExePath[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows\\realesrgan-ncnn-vulkan.exe";
-    static const WCHAR szffmpegExePath[] = L"C:\\Users\\asus\\coding\\vsc++\\ffmpeg-4.4.1-full_build-shared\\bin\\ffmpeg.exe";
-    static const WCHAR szHRExeDir[] = L"C:\\Users\\asus\\Downloads\\Compressed\\realesrgan-ncnn-vulkan-20211212-windows";
-    static const WCHAR szModelrealesrgan_x4plus_anime[] = L"realesrgan-x4plus-anime";
-    static const WCHAR szCmdLineBase[] = L"%s -i %s -o %s -s %d -n %s";
-    static const WCHAR szffmpegBase[] = L"%s -i %s %s";
-    static const WCHAR szffmpegResizeBase[] = L"%s -i %s -s %dx%d %s";
+    WCHAR szHRExeDir[sizeof(szHRExePath)];
+    wcscpy_s(szHRExeDir, szHRExePath);
+    PathCchRemoveFileSpec(szHRExeDir, sizeof(szHRExePath));
+    //MessageBox(NULL, szHRExeDir, L"RealesrganHRModel::RunHRAsBitmap", MB_OK);
     WCHAR szCurrentDir[128];
     int i;
     WCHAR szBuffer[128];

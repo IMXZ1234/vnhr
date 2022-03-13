@@ -89,11 +89,24 @@ bool VnhrDisplayWindow::set_target_window(HWND hWndTarget)
     return true;
 }
 
+static bool ClientPointTransform(HWND hWnd, HWND hWndTarget, POINT* stPoint)
+{
+    RECT stRect;
+    if (!GetClientRect(hWndTarget, &stRect))
+        return false;
+    stPoint->x = (double)stPoint->x * ((double)stRect.right - stRect.left);
+    stPoint->y = (double)stPoint->y * ((double)stRect.bottom - stRect.top);
+    if (!GetClientRect(hWnd, &stRect))
+        return false;
+    stPoint->x = (WORD)(stPoint->x / ((double)stRect.right - stRect.left));
+    stPoint->y = (WORD)(stPoint->y / ((double)stRect.bottom - stRect.top));
+    return true;
+}
+
 // relay messages(mouse/keyboard input) to hWndTarget with tweaks
 static BOOL RelayMessages(HWND hWnd, HWND hWndTarget, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int x, y, _x, _y;
-    RECT stRect;
+    POINT stPoint;
     switch (message)
     {
     case WM_CHAR:
@@ -104,32 +117,47 @@ static BOOL RelayMessages(HWND hWnd, HWND hWndTarget, UINT message, WPARAM wPara
     case WM_MOUSEHWHEEL:
     case WM_NCLBUTTONDOWN:
     case WM_NCRBUTTONDOWN:
+    case WM_NCMBUTTONDOWN:
+    case WM_NCXBUTTONDOWN:
     case WM_NCLBUTTONUP:
     case WM_NCRBUTTONUP:
+    case WM_NCMBUTTONUP:
+    case WM_NCXBUTTONUP:
+    case WM_NCLBUTTONDBLCLK:
+    case WM_NCRBUTTONDBLCLK:
+    case WM_NCMBUTTONDBLCLK:
+    case WM_NCXBUTTONDBLCLK:
         // for NC messages, lParam is x, y pos in screen coordinate
-
+        stPoint.x = LOWORD(lParam);
+        stPoint.y = HIWORD(lParam);
+        ScreenToClient(hWnd, &stPoint);
+        if (!ClientPointTransform(hWnd, hWndTarget, &stPoint))
+        {
+            MessageBox(NULL, L"target lost!", L"VnhrDisplayWindow::WndProc", MB_OK);
+            SendMessage(hWnd, WM_DESTROY, NULL, NULL);
+        }
+        ClientToScreen(hWndTarget, &stPoint);
+        return PostMessage(hWndTarget, message, wParam, MAKELPARAM(stPoint.x, stPoint.y));
     case WM_LBUTTONDOWN:
     case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_XBUTTONDOWN:
     case WM_RBUTTONDBLCLK:
     case WM_LBUTTONDBLCLK:
     case WM_XBUTTONDBLCLK:
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
-    case WM_XBUTTONDOWN:
+    case WM_MBUTTONUP:
     case WM_XBUTTONUP:
-        x = LOWORD(lParam);
-        y = HIWORD(lParam);
-        if (!GetClientRect(hWndTarget, &stRect))
+        // for ordinary mouse messages, lParam is x, y pos in client coordinate
+        stPoint.x = LOWORD(lParam);
+        stPoint.y = HIWORD(lParam);
+        if (!ClientPointTransform(hWnd, hWndTarget, &stPoint))
         {
             MessageBox(NULL, L"target lost!", L"VnhrDisplayWindow::WndProc", MB_OK);
             SendMessage(hWnd, WM_DESTROY, NULL, NULL);
         }
-        _x = (double)x * ((double)stRect.right - stRect.left);
-        _y = (double)y * ((double)stRect.bottom - stRect.top);
-        GetClientRect(hWnd, &stRect);
-        x = (WORD)(_x / ((double)stRect.right - stRect.left));
-        y = (WORD)(_y / ((double)stRect.bottom - stRect.top));
-        PostMessage(hWndTarget, message, wParam, MAKELPARAM(x, y));
+        return PostMessage(hWndTarget, message, wParam, MAKELPARAM(stPoint.x, stPoint.y));
         break;
     default:
         break;
@@ -186,12 +214,7 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
         //    process_task.stRectTo.bottom);
         //MessageBox(NULL, szBuffer, NULL, MB_OK);
         GetClientRect(hWndTarget_, &(process_task.stRectFrom));
-        //memcpy_s(&(process_task.stRectFrom), sizeof(RECT), &stRectFrom, sizeof(RECT));
-        //memcpy_s(&(process_task.stRectTo), sizeof(RECT), &stRectTo, sizeof(RECT));
-
         processor_->ProcessHR(&process_task);
-        //wsprintf(szBuffer, L"task sent %x", wParam);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
         break;
     }
     case VNHRM_FREE_BMP:
@@ -272,65 +295,20 @@ LRESULT CALLBACK VnhrDisplayWindow::WndProc(HWND hWnd, UINT message, WPARAM wPar
     case WM_LBUTTONDOWN:
     case WM_RBUTTONDOWN:
     case WM_MBUTTONDOWN:
+        // process HR after a short delay to compensate for the drawing delay of target window
         // create timers which won't replace each other
         display_delay_timerid = IDAllocator::GetIDAllocatorFor(IDALLOCATOR_TIMER)->AllocateID();
         if (display_delay_timerid == -1)
             break;
-        //wsprintf(szBuffer, L"display_delay_timerid timer SET %x", display_delay_timerid);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
-        //wsprintf(szBuffer, L"hWnd timer SET %x", hWnd);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
         idTimer = SetTimer(hWnd, (UINT_PTR)display_delay_timerid, uDisplayDelay, NULL);
-        //wsprintf(szBuffer, L"idTimer timer SET %x", idTimer);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
-    case WM_NCLBUTTONDOWN:
-    case WM_NCRBUTTONDOWN:
-    case WM_NCMBUTTONDOWN:
-    case WM_NCXBUTTONDOWN:
-    case WM_NCLBUTTONUP:
-    case WM_NCRBUTTONUP:
-    case WM_NCMBUTTONUP:
-    case WM_NCXBUTTONUP:
-    case WM_NCLBUTTONDBLCLK:
-    case WM_NCRBUTTONDBLCLK:
-    case WM_NCMBUTTONDBLCLK:
-    case WM_NCXBUTTONDBLCLK:
-
-    case WM_RBUTTONDBLCLK:
-    case WM_LBUTTONDBLCLK:
-    case WM_XBUTTONDBLCLK:
-    case WM_LBUTTONUP:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONUP:
-    case WM_XBUTTONDOWN:
-    case WM_XBUTTONUP:
-        x = LOWORD(lParam);
-        y = HIWORD(lParam);
-        //wsprintf(szBuffer, L"%d, %d", x, y);
-        //MessageBox(NULL, szBuffer, NULL, MB_OK);
-        //SetWindowText(hLabelTest, buffer);
-        if (!GetClientRect(hWndTarget_, &stRect))
-        {
-            MessageBox(NULL, L"target lost!", L"VnhrDisplayWindow::WndProc", MB_OK);
-            SendMessage(hWnd, WM_DESTROY, NULL, NULL);
-        }
-        _x = (double)x * ((double)stRect.right - stRect.left);
-        _y = (double)y * ((double)stRect.bottom - stRect.top);
-        GetClientRect(hWnd, &stRect);
-        x = (WORD)(_x / ((double)stRect.right - stRect.left));
-        y = (WORD)(_y / ((double)stRect.bottom - stRect.top));
-        PostMessage(hWndTarget_, message, wParam, MAKELPARAM(x, y));
-        //error = GetLastError();
-        //wsprintf(buffer, L"%d", error);
-        //SetWindowText(hLabelTest3, buffer);
+        RelayMessages(hWnd, hWndTarget_, message, wParam, lParam);
         break;
-    //case WM_CREATE:
-    //    break;
     case WM_DESTROY:
         // seems that WM_DESTROY is not the last message, where to delete this?
         //delete this;
         break;
     default:
+        RelayMessages(hWnd, hWndTarget_, message, wParam, lParam);
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
