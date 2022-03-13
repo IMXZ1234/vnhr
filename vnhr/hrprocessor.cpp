@@ -36,11 +36,13 @@ bool HRProcessor::ProcessHR(const HRPROCESSTASK* pstTask)
         return false;
     HRPROCESSTASK* target = (HRPROCESSTASK*)malloc(sizeof(HRPROCESSTASK));
     memcpy_s(target, sizeof(HRPROCESSTASK), pstTask, sizeof(HRPROCESSTASK));
+    //wsprintf(szBuffer, L"process hr  %x", pstTask->pbmih);
+    //MessageBox(NULL, szBuffer, NULL, MB_OK);
     HRPROCESSTASK* ret = AlterstTaskList(HRTASK_APPEND, target);
     if (ret != nullptr)
     {
-        wsprintf(szBuffer, L"sending free bmp %x", pstTask->hWnd);
-        MessageBox(NULL, szBuffer, NULL, MB_OK);
+        //wsprintf(szBuffer, L"sending free bmp %x", pstTask->pbmih);
+        //MessageBox(NULL, szBuffer, NULL, MB_OK);
         PostMessage(pstTask->hWnd, VNHRM_FREE_BMP, (WPARAM)ret->pbmih, HRPROCESS_DISCARDED);
         free(ret);
     }
@@ -106,6 +108,7 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
 {
     std::list<HRPROCESSTASK*>::const_iterator it;
     HRPROCESSTASK* target = nullptr;
+    WCHAR szBuffer[128];
     EnterCriticalSection(&stCS_);
     switch (op)
     {
@@ -117,6 +120,8 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
             target = task_waiting_list_.front();
             task_waiting_list_.pop_front();
         }
+        //wsprintf(szBuffer, L"appended task  %x", pstTask->pbmih);
+        //MessageBox(NULL, szBuffer, NULL, MB_OK);
         task_waiting_list_.push_back(pstTask);
         break;
     case HRTASK_PROCESS_OVER:
@@ -144,6 +149,8 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
         if (task_waiting_list_.size() != 0)
         {
             target = task_waiting_list_.front();
+            //wsprintf(szBuffer, L"retirved task for process %x", target->pbmih);
+            //MessageBox(NULL, szBuffer, NULL, MB_OK);
             task_waiting_list_.pop_front();
             task_processing_list_.push_back(target);
         }
@@ -152,6 +159,15 @@ HRPROCESSTASK* HRProcessor::AlterstTaskList(int op, HRPROCESSTASK* pstTask)
         break;
     }
     LeaveCriticalSection(&stCS_);
+    //if (target)
+    //{
+    //    wsprintf(szBuffer, L"return task %x", target->pbmih);
+    //    MessageBox(NULL, szBuffer, NULL, MB_OK);
+    //}
+    //else
+    //{
+    //    MessageBox(NULL, L"return task nullptr", NULL, MB_OK);
+    //}
     return target;
 }
 
@@ -163,21 +179,31 @@ DWORD WINAPI HRProcessor::RunHR(PVOID lParam)
     BITMAPINFOHEADER* pbmih;
     while (true)
     {
-        MessageBox(NULL, L"RUN!", NULL, MB_OK);
+        //MessageBox(NULL, L"RUN!", NULL, MB_OK);
         WaitForSingleObject(instance.hSemaphoreThread_, INFINITE);
-        MessageBox(NULL, L"RUNNING!", NULL, MB_OK);
-        pstTask = instance.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
-        if (pstTask == nullptr)
+        if (instance.bThreadExit_)
+        {
             // on exiting thread
-            MessageBox(NULL, L"EXITING!", NULL, MB_OK);
+            MessageBox(NULL, L"Thread exiting!", L"HRProcessor::RunHR", MB_OK);
             break;
-        MessageBox(NULL, L"WORKING!", NULL, MB_OK);
+        }
+        //MessageBox(NULL, L"RUNNING!", NULL, MB_OK);
+        pstTask = instance.AlterstTaskList(HRTASK_GET_FOR_PROCESS, nullptr);
+        if (!pstTask)
+            continue;
+        //MessageBox(NULL, L"WORKING!", NULL, MB_OK);
         stConfig = HRProcessor::GetConfigFor(pstTask->hWnd);
-        pbmih = stConfig->model->RunHRAsBitmap(pstTask->pbmih, &pstTask->stRectFrom, &pstTask->stRectTo);
-
+        if (!stConfig)
+        {
+            MessageBox(NULL, L"Config not found, skipped task!", NULL, MB_OK);
+        }
+        else 
+        {
+            pbmih = stConfig->model->RunHRAsBitmap(pstTask->pbmih, &pstTask->stRectFrom, &pstTask->stRectTo);
+            PostMessage(pstTask->hWnd, VNHRM_HRFINISHED, (WPARAM)pbmih, NULL);
+        }
         instance.AlterstTaskList(HRTASK_PROCESS_OVER, pstTask);
         PostMessage(pstTask->hWnd, VNHRM_FREE_BMP, (WPARAM)pstTask->pbmih, HRPROCESS_PROCESSED);
-        PostMessage(pstTask->hWnd, VNHRM_HRFINISHED, (WPARAM)pbmih, NULL);
 
         free(pstTask);
     }

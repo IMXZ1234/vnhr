@@ -32,12 +32,7 @@ public:
         LPVOID lpParam);
     virtual bool Destruction();
 
-
-    inline bool set_target_window(HWND hWndTarget)
-    {
-        hWndTarget_ = hWndTarget;
-        return true;
-    }
+    bool set_target_window(HWND hWndTarget);
 
     inline HWND get_target_window()
     {
@@ -94,6 +89,7 @@ private:
     int auto_timerid_;
 
     BITMAPINFOHEADER* pbmih_;
+    HBITMAP hBitmap_;
     HDC hDCDisplayCache_;
 
 	ImgCapture* img_capture_;

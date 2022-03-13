@@ -38,8 +38,8 @@ BITMAPINFOHEADER* RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmih
     GetCurrentDirectory(128, szCurrentDir);
     //MessageBox(NULL, szCurrentDir, L"szCurrentDir", MB_OK);
     i = -1;
-    //find the first file name which is available to create .bmp(in other word, the path does not exist), 
-    //as there may be multiple working threads creating files
+    // find the first file name which is available to create .bmp(in other word, the path does not exist), 
+    // as there may be multiple working threads creating files
     WaitForSingleObject(hMutexCreateFile_, NULL);
     do {
         i++;
@@ -51,18 +51,21 @@ BITMAPINFOHEADER* RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmih
         hFindFile = FindFirstFile(szBitmapFilePath, &stFindData);
     } while (hFindFile != INVALID_HANDLE_VALUE);
     //MessageBox(NULL, szBitmapFilePath, L"szBitmapFilePath", MB_OK);
-    // TODO
-    SavePackedDIBtoFile(szBitmapFilePath, pbmihFrom);
+    if (!SavePackedDIBtoFile(szBitmapFilePath, pbmihFrom))
+    {
+        MessageBox(NULL, L"Fail to write bmp!", L"RealesrganHRModel::RunHRAsBitmap", MB_OK);
+        return nullptr;
+    }
     ReleaseMutex(hMutexCreateFile_);
 
-    //output file name
+    // output file name
     wcscpy_s(szOutFilePath, szCurrentDir);
     wcscat_s(szOutFilePath, L"\\");
     wsprintf(szFileName, L"%d.png", i);
     wcscat_s(szOutFilePath, szFileName);
     //MessageBox(NULL, szOutFilePath, L"szOutFilePath", MB_OK);
 
-    //output converted file name
+    // output converted file name
     wcscpy_s(szOutConvertedFilePath, szCurrentDir);
     wcscat_s(szOutConvertedFilePath, L"\\");
     wsprintf(szFileName, L"%d_.bmp", i);
@@ -84,7 +87,7 @@ BITMAPINFOHEADER* RealesrganHRModel::RunHRAsBitmap(const BITMAPINFOHEADER* pbmih
     CloseHandle(stProcInfo.hProcess);
     CloseHandle(stProcInfo.hThread);
 
-    //construct cmdline for ffmpeg to extract bmp from png
+    // construct cmdline for ffmpeg to extract bmp from png
     //wsprintf(szCmdLine, szffmpegBase, szffmpegExePath, szOutFilePath, szOutConvertedFilePath);
     wsprintf(szCmdLine, szffmpegResizeBase, szffmpegExePath, szOutFilePath, stRectTo->right - stRectTo->left, stRectTo->bottom - stRectTo->top, szOutConvertedFilePath);
     //MessageBox(NULL, szCmdLine, L"ffmpeg", MB_OK);

@@ -29,7 +29,6 @@ bool VnhrMainWindow::Init(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindow
     hEdithWndTarget = NULL;
     hButtonStart = NULL;
     hStaticSearchTarget = NULL;
-    MessageBox(NULL, L"MAIN", NULL , MB_OK);
     return VnhrWindow::Init(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
 
@@ -37,9 +36,9 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
 {
     WCHAR szBuffer[128];
     DWORD baseUnit;
-    HDC hDCScreen;
+    //HDC hDCScreen;
     HWND hWndTarget;
-    int uScreenX, uScreenY;
+    UINT uScreenX, uScreenY;
     int cxChar, cyChar;
     POINT point;
     static HWND hLastWndUnderMouse = NULL;
@@ -58,25 +57,28 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             hWndTarget = (HWND)wstrhex2int(szBuffer);
             if (!IsWindow(hWndTarget))
             {
-                wsprintf(szBuffer, L"Invalid Window Handle %X !", hWndTarget);
-                MessageBox(hWnd, szBuffer, L"hWndTarget", MB_OK);
+                wsprintf(szBuffer, L"Invalid window handle: %X, please choose again!", hWndTarget);
+                MessageBox(hWnd, szBuffer, L"VnhrMainWindow::WndProc", MB_OK);
                 break;
             }
-            hDCScreen = GetDC(NULL);
-            uScreenX = GetDeviceCaps(hDCScreen, HORZRES);
-            uScreenY = GetDeviceCaps(hDCScreen, VERTRES);
-            ReleaseDC(NULL, hDCScreen);
+            //hDCScreen = GetDC(hWnd);
+            uScreenX = GetSystemMetrics(SM_CXSCREEN);
+            uScreenY = GetSystemMetrics(SM_CYSCREEN);
+            //uScreenX = GetDeviceCaps(hDCScreen, HORZRES);
+            //uScreenY = GetDeviceCaps(hDCScreen, VERTRES);
+            //wsprintf(szBuffer, L"uScreenX %d uScreenY %d !", uScreenX, uScreenY);
+            //MessageBox(hWnd, szBuffer, L"hWndTarget", MB_OK);
+            //ReleaseDC(NULL, hDCScreen);
             display_window = new VnhrDisplayWindow;
             //GetWindowText(hWndTarget, szBuffer, 128);
             //MessageBox(hWnd, szBuffer, L"hWndTarget title", MB_OK);
-            display_window->Init(NULL, VnhrDisplayWindow::szWndClassName_, szBuffer, WS_VISIBLE, 0, 0,
-                uScreenX, uScreenY, hWnd, NULL, hInstance_, NULL);
+            display_window->Init(NULL, VnhrDisplayWindow::szWndClassName_, szBuffer, WS_VISIBLE | WS_POPUP, 0, 0,
+                uScreenX, uScreenY, NULL, NULL, hInstance_, NULL);
             display_window->set_target_window(hWndTarget);
-            MessageBox(hWnd, L"display Init complete", L"hWndTarget", MB_OK);
             break;
         case ID_STATICSEARCHTARGET:
             //MessageBox(hWnd, L"Static clicked", NULL, MB_OK); | WS_POPUP
-            bSearchingTarget = TRUE;
+            bSearchingTarget = true;
             hWndUnderMouse = NULL;
             hLastWndUnderMouse = NULL;
             SetCapture(hWnd);
@@ -103,7 +105,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
             {
                 wsprintf(szBuffer, L"%X", hWndUnderMouse);
                 SetWindowText(hEdithWndTarget, szBuffer);
-                wsprintf(szBuffer, L"x: %d y: %d", point.x, point.y);
+                wsprintf(szBuffer, L"x: %d\ny: %d", point.x, point.y);
                 SetWindowText(hStaticSearchTarget, szBuffer);
                 hLastWndUnderMouse = hWndUnderMouse;
             }
@@ -111,7 +113,7 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         break;
     case WM_LBUTTONUP:
         ReleaseCapture();
-        bSearchingTarget = FALSE;
+        bSearchingTarget = false;
         break;
     case WM_PAINT:
     {
@@ -126,13 +128,14 @@ LRESULT CALLBACK VnhrMainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam,
         cxChar = LOWORD(baseUnit);
         cyChar = HIWORD(baseUnit);
         // MessageBox(hWnd, L"create", NULL, MB_OK);
-        hEdithWndTarget = CreateWindow(TEXT("EDIT"), NULL, WS_CHILD | WS_VISIBLE, cxChar, cyChar / 2, cxChar * 20, cyChar, hWnd, (HMENU)ID_EDITHWNDTARTGET, hInstance_, NULL);
-        hStaticSearchTarget = CreateWindow(TEXT("STATIC"), TEXT("Find\nWindow"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, cxChar, cyChar * 3 / 2, cxChar * 8, cyChar * 4, hWnd, (HMENU)ID_STATICSEARCHTARGET, hInstance_, NULL);
-        hButtonStart = CreateWindow(TEXT("BUTTON"), NULL, WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, cxChar, cyChar * 6, cxChar * 20, cyChar *7 / 4, hWnd, (HMENU)ID_BUTTONSTART, hInstance_, NULL);
+        hEdithWndTarget = CreateWindow(TEXT("EDIT"), NULL, WS_CHILD | WS_VISIBLE | ES_CENTER, cxChar, cyChar / 2, cxChar * 20, cyChar, hWnd, (HMENU)ID_EDITHWNDTARTGET, hInstance_, NULL);
+        hStaticSearchTarget = CreateWindow(TEXT("STATIC"), TEXT("Find\nWindow"), WS_CHILD | WS_VISIBLE | SS_NOTIFY | SS_CENTER, cxChar * 7, cyChar * 3 / 2, cxChar * 8, cyChar * 4, hWnd, (HMENU)ID_STATICSEARCHTARGET, hInstance_, NULL);
+        hButtonStart = CreateWindow(TEXT("BUTTON"), TEXT("OK"), WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, cxChar, cyChar * 6, cxChar * 20, cyChar * 7 / 4, hWnd, (HMENU)ID_BUTTONSTART, hInstance_, NULL);
         break;
     case WM_DESTROY:
-        delete this;
         PostQuitMessage(0);
+        // seems that WM_DESTROY is not the last message, where to delete this?
+        //delete this;
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

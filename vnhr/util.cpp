@@ -105,13 +105,14 @@ BITMAPINFOHEADER* LoadPackedDIBfromFile(const WCHAR* pszFilePath)
     pbmfh = (BITMAPFILEHEADER*)malloc(sizeof(BITMAPFILEHEADER));
     if (!pbmfh)
     {
+        MessageBox(NULL, L"Fail to allocate memory for bmp loading!", L"LoadPackedDIBfromFile", MB_OK);
         CloseHandle(hFile);
         return nullptr;
     }
     bSuccess = ReadFile(hFile, pbmfh, sizeof(BITMAPFILEHEADER), &dwBytesRead, NULL);
     if (!bSuccess || (dwBytesRead != sizeof(BITMAPFILEHEADER)) || (pbmfh->bfType != 0x4D42) || (pbmfh->bfSize != dwFileSize))
     {
-        MessageBox(NULL, L"Load bmp fail!", NULL, MB_OK);
+        MessageBox(NULL, L"Fail to load bmp, file may be corrupted!", L"LoadPackedDIBfromFile", MB_OK);
         free(pbmfh);
         return nullptr;
     }
@@ -122,14 +123,15 @@ BITMAPINFOHEADER* LoadPackedDIBfromFile(const WCHAR* pszFilePath)
     pbmih = (BITMAPINFOHEADER*)malloc(dwPackedDIBSize);
     if (!pbmih)
     {
+        MessageBox(NULL, L"Fail to allocate memory for bmp loading!", L"LoadPackedDIBfromFile", MB_OK);
         CloseHandle(hFile);
         return nullptr;
     }
     bSuccess = ReadFile(hFile, pbmih, dwPackedDIBSize, &dwBytesRead, NULL);
     CloseHandle(hFile);
-    if (!bSuccess || (dwBytesRead != dwFileSize))
+    if (!bSuccess || (dwBytesRead != dwPackedDIBSize))
     {
-        MessageBox(NULL, L"Load bmp fail!", NULL, MB_OK);
+        MessageBox(NULL, L"Load bmp fail!", L"LoadPackedDIBfromFile", MB_OK);
         free(pbmih);
         return nullptr;
     }
@@ -164,9 +166,18 @@ bool SavePackedDIBtoFile(const WCHAR* pszFilePath, const BITMAPINFOHEADER* pbmih
     DWORD dwBytesWritten;
     HANDLE hFile;
     BITMAPFILEHEADER bmfh;
+    WCHAR szBuffer[128];
+
+    DWORD error;
 
     DWORD dwBmpSize = ((pbmih->biWidth * pbmih->biBitCount + 31) / 32) * 4 * pbmih->biHeight;
-    DWORD dwPackedDIBSize = dwBmpSize + sizeof(BITMAPINFOHEADER);
+    //wsprintf(szBuffer, L"dwBmpSize %d", dwBmpSize);
+    //MessageBox(NULL, szBuffer, NULL, MB_OK);
+    //wsprintf(szBuffer, L"biWidth %d", pbmih->biWidth);
+    //MessageBox(NULL, szBuffer, NULL, MB_OK);
+    //wsprintf(szBuffer, L"biHeight %d", pbmih->biHeight);
+    //MessageBox(NULL, szBuffer, NULL, MB_OK);
+    DWORD dwPackedDIBSize = dwBmpSize + (DWORD)sizeof(BITMAPINFOHEADER);
     // Offset to where the actual bitmap bits start.
     bmfh.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER);
     // Add the size of the headers to the size of the bitmap to get the total file size.
@@ -184,13 +195,18 @@ bool SavePackedDIBtoFile(const WCHAR* pszFilePath, const BITMAPINFOHEADER* pbmih
     bSuccess = WriteFile(hFile, &bmfh, (DWORD)sizeof(BITMAPFILEHEADER), &dwBytesWritten, NULL);
     if (!bSuccess || (dwBytesWritten != (DWORD)sizeof(BITMAPFILEHEADER)))
     {
+        CloseHandle(hFile);
         DeleteFile(pszFilePath);
         return false;
     }
     // Write packed DIB. 
-    bSuccess = WriteFile(hFile, &pbmih, dwPackedDIBSize, &dwBytesWritten, NULL);
+    bSuccess = WriteFile(hFile, pbmih, dwPackedDIBSize, &dwBytesWritten, NULL);
     if (!bSuccess || (dwBytesWritten != dwPackedDIBSize))
     {
+        error = GetLastError();
+        wsprintf(szBuffer, L"error %x", error);
+        MessageBox(NULL, szBuffer, NULL, MB_OK);
+        CloseHandle(hFile);
         DeleteFile(pszFilePath);
         return false;
     }

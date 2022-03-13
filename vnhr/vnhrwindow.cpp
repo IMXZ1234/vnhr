@@ -21,8 +21,6 @@ bool VnhrWindow::Init(
 	hInstance_ = hInstance;
 	hWndParent_ = hWndParent;
     hWnd_ = CreateWindowEx(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, (LPVOID)this);
-    wsprintf(szBuffer, L"%x", hWnd_);
-    MessageBox(NULL, szBuffer, NULL, MB_OK);
     ShowWindow(hWnd_, SW_SHOWDEFAULT);
     UpdateWindow(hWnd_);
     return true;

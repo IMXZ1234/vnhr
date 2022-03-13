@@ -116,7 +116,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    main_window = new VnhrMainWindow();
 
    bool success = main_window->Init(NULL, VnhrMainWindow::szWndClassName_, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, 0, 200, 200, nullptr, nullptr, hInstance, nullptr);
 
    if (!success)
    {
